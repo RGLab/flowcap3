@@ -1,0 +1,79 @@
+\documentclass{article}
+
+\setlength{\oddsidemargin}{0 in} % odd page left margin
+\setlength{\evensidemargin}{0 in} % even page left margin
+\setlength{\textwidth}{6 in}    % width of text
+
+\begin{document}
+
+<<setup, include=FALSE, cache=FALSE, echo=FALSE, warning=FALSE>>=
+opts_chunk$set(fig.align = 'center', dev = 'png', #fig.show = 'hold',
+               message = FALSE, warning = FALSE, cache = FALSE,
+               echo = FALSE, fig.path = 'figure/gates-bcell-',
+               cache.path = 'cache/gates-bcell-', fig.width = 7.5,
+               fig.height = 7.5, out.width = "7.5in", out.height = "7.5in")
+                 
+  
+setwd("..")
+library(ProjectTemplate)
+load.project()
+
+gs_file <- "/loc/no-backup/ramey/cytotrol/Bcell/Cytotrol-Bcell.tar"
+
+# Loads the archived gatingSet object
+gs_bcell <- unarchive(file = gs_file, path = "/loc/no-backup/ramey/cytotrol/Bcell/")
+
+
+population_stats <- pretty_popstats(getPopStats(gs_bcell))
+m_pop_stats <- melt(population_stats)
+colnames(m_pop_stats) <- c("Marker", "Filename", "Proportion")
+
+filename_split <- strsplit(as.character(m_pop_stats$Filename), split = "-")
+filename_split <- do.call(rbind, filename_split)
+
+m_pop_stats$Center <- filename_split[, 1]
+m_pop_stats$Marker <- factor(m_pop_stats$Marker)
+m_pop_stats <- subset(m_pop_stats, Marker != "root")
+
+@
+
+
+\title{Cytotrol B-Cell Summary}
+
+\maketitle
+ 
+\section{Population Statistics}
+
+<<population_stats_summary>>=
+
+# Summarizes the proportions for each pairing of center and marker.
+center_summary <- ddply(m_pop_stats, .(Center, Marker), summarize,
+                        Mean = mean(Proportion), Median = median(Proportion),
+                        CV = sd(Proportion) / mean(Proportion))
+
+# Calculates the CV by marker across all centers and plots them.
+CV_by_marker <- ddply(center_summary, .(Marker), summarize, CV = sd(Median) / mean(Median))
+@ 
+
+<<marker_boxplot>>=
+p <- ggplot(m_pop_stats, aes(x = Center, y = Proportion)) + geom_boxplot()
+p <- p + facet_wrap( ~ Marker, scales = "free_y") + theme(axis.text.x = element_text(angle = 90))
+p
+@ 
+
+<<CV_by_center>>=
+p <- ggplot(center_summary, aes(x = Center, y = CV)) + geom_bar()
+p <- p + facet_wrap( ~ Marker, scales = "free_y")
+p <- p + theme(axis.text.x = element_text(angle = 90)) + ylab("Coefficient of Variation")
+p
+@
+
+<<CV_by_marker>>=
+p <- ggplot(CV_by_marker, aes(x = Marker, y = CV)) + geom_bar()
+p <- p + theme(axis.text.x = element_text(angle = 90)) + ylab("Coefficient of Variation")
+p
+@ 
+
+
+
+\end{document}
