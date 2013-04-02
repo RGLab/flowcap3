@@ -160,20 +160,22 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell")) {
             useNormFilt = TRUE, method = "mean")
 }
 
-#' Constructs a GatingSet for the specified center for Lyoplate 3.0
+#' Constructs a flowSet for the specified center for Lyoplate 3.0
 #'
 #' Creates a \code{flowSet} by reading the FCS files for the current center given
 #' in the Excel file. Then, compensates and transforms them. Finally, constructs
-#' and returns a \code{GatingSet} from the \code{flowSet} object.
+#' and returns the resulting \code{flowSet} object.
 #'
 #' @param path the path that contains the sample FCS files
 #' @param xlsx the name of the XLSX (Excel) file (full path)
 #' @param comp_matrix a compensation matrix
 #' @param center a character string denoting the current center
 #' @param panel the panel type
-#' @return a \code{GatingSet} object
-gatingset_lyoplate <- function(path, xlsx, comp_matrix, center,
-                               panel = c("Bcell", "Tcell", "Treg")) {
+#' @param min_limit the minimum limit to be passed to \code{read.flowSet}
+#' @return a \code{flowSet} object
+flowset_lyoplate <- function(path, xlsx, comp_matrix, center,
+                             panel = c("Bcell", "Tcell", "Treg"),
+                             min_limit = -100) {
   require('xlsx')
   panel <- match.arg(panel)
 
@@ -184,6 +186,7 @@ gatingset_lyoplate <- function(path, xlsx, comp_matrix, center,
   exp_samples <- subset(exp_samples, select = -Institution)
   exp_samples$Replicate <- as.character(as.numeric(exp_samples$Replicate))
   exp_samples$Sample <- as.character(as.numeric(exp_samples$Sample))
+  exp_samples$Center <- center
 
   # Removes whitespace from Panel names
   exp_samples$Panel <- gsub(" ", "", exp_samples$Panel)
@@ -193,7 +196,7 @@ gatingset_lyoplate <- function(path, xlsx, comp_matrix, center,
 
   # Reads in the FCS files for the specified panel
   fcs_files <- file.path(path, exp_samples$name)
-  exp_flowset <- read.flowSet(fcs_files, min.limit = -100)
+  exp_flowset <- read.flowSet(fcs_files, min.limit = min_limit)
 
   # Updates the flowSet's pData
   exp_pdata <- pData(exp_flowset)
@@ -210,11 +213,8 @@ gatingset_lyoplate <- function(path, xlsx, comp_matrix, center,
                                             channels = colnames(comp_matrix))
   exp_flowset <- transform(exp_flowset, trans)
 
-  GatingSet(exp_flowset)
+  exp_flowset
 }
-
-
-
 
 ##################################################
 ## B subpopulations

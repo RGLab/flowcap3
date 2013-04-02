@@ -2,37 +2,41 @@ library(ProjectTemplate)
 load.project()
 
 panel <- "Bcell"
-path <- "/loc/no-backup/ramey/cytotrol"
+path_Lyoplate <- "/loc/no-backup/ramey/Lyoplate/"
 
-# For now, we manually remove Miami and Yale because they do not contain the FSC-H marker.
-# In FlowCAP 3 we used a special singlet gate for both centers,
-# but currently OpenCyto cannot handle this use case.
-centers <- c("Baylor", "BSMS", "CIMR", "Kings", "Miami", "NHLBI", "Stanford", "UCLA", "Yale")
-
-fs_list <- lapply(centers, function(center) {
-  data_path <- file.path(path, panel, center)
-  fcs_files <- list.files(data_path, pattern = ".fcs", full.names = TRUE)
-  read.flowSet(fcs_files, min.limit = -100)
-})
+# There is a bug in the built-in 'list.dirs' function. The argument 'full.names'
+# does not work as advertised. After a quick Google search, others recently have
+# had similar results.
+# To fix this, I manually grab the directory names using 'strsplit'.
+centers <- list.dirs(path_Lyoplate, recursive = FALSE, full.names = FALSE)
+centers <- sapply(strsplit(centers, split = "/"), tail, n = 1)
 
 # These are the markers that we will keep after the data have been preprocessed.
 markers_of_interest <- c("FSC-A", "SSC-A", "CD3", "CD19", "CD20", "IgD", "CD27",
                          "CD38", "CD24")
 
-fs_list <- lapply(seq_along(centers), function(i) {
-  fs_center <- fs_list[[i]]
+# For each center, we construct a flowSet of FCS files after compensating and
+# transforming the flowSet created from the FCS files in the center's
+# subdirectory under 'path_Lyoplate'.
+fs_list <- lapply(centers, function(center) {
+  message("Center: ", center)
+  path <- file.path(path_Lyoplate, center)
 
-  # Compensates the flowSet
-  comp_mat <- keyword(fs_center[[1]])$SPILL
-  fs_center <- compensate(fs_center, comp_mat)
+  # The filename of the manually edited Excel file: assumed to be in getwd()
+  xlsx <- dir(pattern = center)
+  comp_matrix <- compensation_lyoplate(path = path, xlsx = xlsx, panel = panel)
 
-  # Transforms the flowSet
-  transformation <- estimateMedianLogicle(fs_center, channels = colnames(comp_mat))
-  fs_center <- transform(fs_center, transformation)
-  
-  flow_set <- fsApply(fs_center, preprocess_flowframe,
+  # Constructs a flowSet object for the current center. The flowSet will be
+  # compensated and transformed.
+  flow_set <- flowset_lyoplate(path = path, xlsx = xlsx,
+                               comp_matrix = comp_matrix, center = center,
+                               panel = panel)
+
+  # Swaps the channels and markers for the current 'flowSet' object. This ensures
+  # that we can 'rbind2' the 'GatingSetList' below because the stain names do not
+  # match otherwise.
+  flow_set <- fsApply(flow_set, preprocess_flowframe,
                       markers_keep = markers_of_interest)
-  flow_set <- update_phenodata(flow_set)
 
   flow_set
 })
@@ -42,5 +46,5 @@ gs_list <- GatingSetList(gs_list)
 
 gs_bcell <- rbind2(gs_list)
 
-archive(gs_bcell, file = "/loc/no-backup/ramey/cytotrol/Bcell/Cytotrol-Bcell.tar")
+archive(gs_bcell, file = file.path(path_Lyoplate, "gs-Bcell.tar"))
 
