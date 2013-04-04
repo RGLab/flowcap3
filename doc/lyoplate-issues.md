@@ -9,6 +9,7 @@
 * Channel V545 incorrectly labeled as V500
 
 ### Stanford
+* Compensation controls not provided for the following T-cell, B-cell, and Treg markers: CD45RA, CD27, CD127, CD8, CD45RO 
 * Some markers in compensation controls do not match channels in FCS files
 * The filenames for some of the sample FCS files do not match those given in the Excel spreadsheet
 
