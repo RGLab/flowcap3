@@ -28,5 +28,4 @@ Rm("IgD-cd27-", gs_bcell)
 gating.bsub(gs_bcell, parent = "cd19 & cd20")
 
 # TODO: Add cytokine prior elicitation to OpenCyto with artificial peaks option
-#   This would ensure that OpenCyto can deliver the 
-
+#   This would ensure that OpenCyto can deliver the same results as the less automatic IgD gate above.
