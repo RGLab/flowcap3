@@ -130,7 +130,35 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell")) {
   comp_controls <- read.xlsx2(file = xlsx, sheetName = "Comp controls",
                               startRow = 3, stringsAsFactors = FALSE)
 
-  # First, we remove the spaces in the tube names
+  # In the manually edited Excel files, we use the format "Marker:Channel". For
+  # instance, we might have CD8:APC-H7. We extract the entire string after the
+  # colon.
+  comp_controls$Marker <- sapply(strsplit(comp_controls$Marker, split = ":"),
+                                 tail, n = 1)
+
+  # For some centers, such as Stanford, generic color controls were used for
+  # compensation. In some of these cases, a single FCS file was used for all
+  # markers sharing the same channel. We handle this case by replacing the empty
+  # FCS filenames with a filename that corresponds to the same channel.
+  which_empty <- which(comp_controls$FCS.file.name == "")
+  generic_FCS_filenames <- sapply(which_empty, function(i) {
+    which_generic <- which(with(comp_controls,
+                           Marker[i] == Marker & FCS.file.name != ""))
+
+    # In the case that there are multiple matches, we take the first.
+    comp_controls$FCS.file.name[which_generic[1]]
+  })
+  comp_controls$FCS.file.name <- replace(comp_controls$FCS.file.name,
+                                         which_empty, generic_FCS_filenames)
+
+  # For some markers (e.g., APC-H7 from Stanford), there are no FCS files for a
+  # generic marker. In this case, the above generic names result in 'NA', in
+  # which case, we omit them from the compensation controls data.frame.
+  comp_controls <- subset(comp_controls, !is.na(FCS.file.name))
+
+  # Next, we select only the files for the current panel.
+  # To do this, we remove the spaces in the tube names and then use a string lookup
+  # to identify the controls.
   comp_controls$Applies.to.tube <- gsub(" ", "", comp_controls$Applies.to.tube)
   tubes_split <- strsplit(comp_controls$Applies.to.tube, ",")
 
@@ -139,13 +167,11 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell")) {
   } else if (panel == "Tcell") {
     which_files <- sapply(tubes_split, function(x) any(x %in% c("all", "T", "Tcell")))
   }
-
-  # We exclude the entries that have empty filenames.
-  which_files <- which_files & comp_controls$FCS.file.name != ""
+  comp_controls <- comp_controls[which_files, ]
 
   # Constructs a flowSet of the compensation control FCS files along with the
   # unstained control FCS file
-  FCS_files <- comp_controls$FCS.file.name[which_files]
+  FCS_files <- comp_controls$FCS.file.name
   unstained_control <- dir(path, pattern = "Compensation.*Unstained")
   FCS_files <- file.path(path, c(FCS_files, unstained_control))
 
