@@ -148,8 +148,10 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell")) {
     # In the case that there are multiple matches, we take the first.
     comp_controls$FCS.file.name[which_generic[1]]
   })
-  comp_controls$FCS.file.name <- replace(comp_controls$FCS.file.name,
-                                         which_empty, generic_FCS_filenames)
+  if (length(generic_FCS_filenames) != 0) {
+    comp_controls$FCS.file.name <- replace(comp_controls$FCS.file.name,
+                                           which_empty, generic_FCS_filenames)
+  }
 
   # For some markers (e.g., APC-H7 from Stanford), there are no FCS files for a
   # generic marker. In this case, the above generic names result in 'NA', in
@@ -182,7 +184,7 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell")) {
   # A regular expression in 'patt' indicates the markers that we want to compensate.
   #    These are given in the XLSX file.
   spillover(comp_flowset, unstained = length(comp_flowset),
-            patt = paste(comp_controls$Marker[which_files], collapse = "|"),
+            patt = paste(comp_controls$Marker, collapse = "|"),
             useNormFilt = TRUE, method = "mean")
 }
 
