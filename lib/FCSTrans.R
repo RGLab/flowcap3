@@ -1,4 +1,3 @@
-#
 # ImmPort FCS conversion program: FCSTrans
 # version: 1.3 - accuri data support added
 # Authors: Yue Liu and Yu "Max" Qian
@@ -12,9 +11,6 @@
 #
 # FCSTrans can be cited as: 
 # Qian, Y., Liu, Y., Campbell, J., Thomson, E., Kong, Y. M. and Scheuermann, R. H. (2012), FCSTrans: An open source software system for FCS file conversion and data transformation. Cytometry. doi: 10.1002/cyto.a.22037
-
-library(marray)
-library(flowCore)
 
 # set output to 0 when input is less than cutoff value
 ipfloor <- function (x, cutoff = 0, target = 0) {
@@ -185,7 +181,22 @@ convertAccuriFcs <- function(fcs) {
 }
 
 
-fcsTransTransform<-function(transformationId="defaultFCSTransTransform",channelrange=16777215,channeldecade=7.224719870049579){k<-new("transform",.Data=function(x){x<-iplogicle(x,channelrange,channeldecade)});k@transformationId<-transformationId;k}
+#' Helper function to apply iplogicle transform using flowCore standard
+#' 
+#' @param transformationId TODO
+#' @param channelrange TODO
+#' @param channeldecade TODO
+#' @return TODO
+fcsTransTransform <- function(transformationId = "defaultFCSTransTransform",
+                              channelrange = 16777215,
+                              channeldecade = 7.224719870049579) {
+  k <- new("transform", .Data = function(x) {
+    x <- iplogicle(x, channelrange, channeldecade)
+  })
+  k@transformationId <- transformationId
+  k
+}
+
 # immport convert function - convert flow cytometry values to channel output
 # iterate columns name and treat data in three categories:
 #   scatter      linear 
