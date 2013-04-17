@@ -184,6 +184,8 @@ convertAccuriFcs <- function(fcs) {
   fcs.channel
 }
 
+
+fcsTransTransform<-function(transformationId="defaultFCSTransTransform",channelrange=16777215,channeldecade=7.224719870049579){k<-new("transform",.Data=function(x){x<-iplogicle(x,channelrange,channeldecade)});k@transformationId<-transformationId;k}
 # immport convert function - convert flow cytometry values to channel output
 # iterate columns name and treat data in three categories:
 #   scatter      linear 
