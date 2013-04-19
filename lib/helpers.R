@@ -235,12 +235,15 @@ flowset_lyoplate <- function(path, xlsx, comp_matrix, center,
   varM[-1,] <- rownames(varM)[-1]
   varMetadata(phenoData(exp_flowset)) <- varM
 
+  # Compensates and transforms flowSet for current center
+  exp_flowset <- compensate(exp_flowset, comp_matrix)
+
   # Applies the FCStrans transformation to the experimental samples.
   # The channels transformed correspond to the column names of the compensation
   # matrix constructed from the compensation controls. However, note that
   # FCStrans compensates the samples using the spillover matrix stored in the
   # keywords.
-  trans <- transformList(from = colnames(comp_matrix), tfun = fcsTransTransform())
+  trans <- transformList(from = colnames(comp_matrix), tfun = FCSTransTransform())
   exp_flowset <- transform(exp_flowset, trans)
   
   exp_flowset
