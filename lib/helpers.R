@@ -179,13 +179,22 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell")) {
 
   comp_flowset <- read.flowSet(FCS_files)
 
+  # Applies flowClust to SSC-A and FSC-A with K = 3 to remove outliers and
+  # debris before constructing a compensation matrix.
+  # Keeps the densest cluster and gates out the rest of the cells.
+  comp_flowset <- fsApply(comp_flowset, function(flow_frame) {
+    tmix_filter <- tmixFilter(filterId = "Lymph", parameters = c("FSC-A", "SSC-A"), K = 3)
+    tmix_results <- filter(flow_frame, tmix_filter)
+    split(x = flow_frame, f = tmix_results, population = which.max(tmix_results@w))[[1]]
+  })
+
   # Constructs the compensation (spillover) matrix
   # The index of 'unstained' is the last of the FCS files read in.
   # A regular expression in 'patt' indicates the markers that we want to compensate.
   #    These are given in the XLSX file.
   spillover(comp_flowset, unstained = length(comp_flowset),
             patt = paste(comp_controls$Marker, collapse = "|"),
-            useNormFilt = TRUE, method = "mean")
+            useNormFilt = FALSE, method = "mean")
 }
 
 #' Constructs a flowSet for the specified center for Lyoplate 3.0

@@ -15,6 +15,8 @@ centers <- sapply(strsplit(centers, split = "/"), tail, n = 1)
 markers_of_interest <- c("FSC-A", "SSC-A", "CD3", "CD19", "CD20", "IgD", "CD27",
                          "CD38", "CD24")
 
+centers <- c("Miami", "NHLBI", "Stanford", "UCLA")
+
 # For each center, we construct a flowSet of FCS files after compensating and
 # transforming the flowSet created from the FCS files in the center's
 # subdirectory under 'path_Lyoplate'.
@@ -41,10 +43,14 @@ fs_list <- lapply(centers, function(center) {
   flow_set
 })
 
-gs_list <- lapply(fs_list, GatingSet)
-gs_list <- GatingSetList(gs_list)
+# Merges the list of flowSet objects into a single flowSet object. This code is
+# verbose but it circumvents an issue introduced recently in flowIncubator.
+flow_set <- fs_list[[1]]
+for (i in seq.int(2, length(fs_list))) {
+  flow_set <- rbind2(flow_set, fs_list[[i]])
+}
 
-gs_bcell <- rbind2(gs_list)
+gs_bcell <- GatingSet(flow_set)
 
 archive(gs_bcell, file = file.path(path_Lyoplate, "gs-Bcell.tar"))
 
