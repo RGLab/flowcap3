@@ -175,6 +175,11 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell")) {
   # unstained control FCS file
   FCS_files <- comp_controls$FCS.file.name
   unstained_control <- dir(path, pattern = "Compensation.*Unstained")
+
+  if (length(unstained_control) == 0) {
+    stop("No unstained compensation control was provided. Not supported by flowCore")
+  }
+
   FCS_files <- file.path(path, c(FCS_files, unstained_control))
 
   comp_flowset <- read.flowSet(FCS_files)
@@ -269,14 +274,14 @@ gating.bsub <- function(gs_bcell, parent = "cd19 & cd20") {
   xChannel <- "IgD"
   yChannel <- "CD27"
 
-  prior_CD27 <- list(CD27 = openCyto:::prior_flowClust(parent_data, "CD27", nu0 = 30))
+  prior_CD27 <- list(CD27 = openCyto:::prior_flowClust(parent_data, "CD27", nu0 = 30, min = 0.01))
 
   fs_list <- split(parent_data, sampleNames(parent_data))
 
   ## Apply the CD27 gate first.
   cd27.filterList <- mclapply(fs_list, function(fs_sample) {
-    openCyto:::.flowClust.1d(fs_sample, yChannel = yChannel, prior = prior_CD27, usePrior = "yes", nu = 30)
-  }, mc.cores = 10)
+    openCyto:::flowClust.1d(fs_sample, yChannel = yChannel, prior = prior_CD27, usePrior = "yes", nu = 30, min = 0.01)
+  }, mc.cores = 12)
 
 
   # Then gate IgD on the cd27+
@@ -289,7 +294,7 @@ gating.bsub <- function(gs_bcell, parent = "cd19 & cd20") {
   # population to be the largest peak after applying a lot of smoothing.
   # Generally, there is only one visible peak anyways.
   IgD_collapsed <- exprs(as(cd27_positive, "flowFrame"))[, xChannel]
-  IgD_negative_peak <- openCyto:::find_peaks(IgD_collapsed, peaks = 1, adjust = 3)
+  IgD_negative_peak <- openCyto:::find_peaks(IgD_collapsed, adjust = 3)
 
   # We use three components to model the IgD marker. We use two components for
   # the negative peak and one component for the positive peak.
@@ -321,4 +326,60 @@ gating.bsub <- function(gs_bcell, parent = "cd19 & cd20") {
 
   nodeID <- add(gs_bcell, filterList(bsub.filterList), parent = parent)
   recompute(gs_bcell, nodeID)
+}
+
+# Code modified from:
+# http://stackoverflow.com/questions/11546256/two-way-density-plot-combined-with-one-way-density-plot-with-selected-regions-in
+marginal_gating_plot <- function(data, feature_pairs, bins = 30) {
+  require('gtable')
+  require('ggplot2')
+  data <- as.data.frame(data)
+  
+  # To automatically plot specified features, we use the `ggplot2:::aes_string` function below.
+  # This function does not handle hyphenated column names well. To handle this, we apply the
+  # `make.names` function to convert to `ggplot2`-friendly names. However,
+  fp_orig <- feature_pairs
+  colnames(data) <- make.names(colnames(data))
+  feature_pairs <- make.names(feature_pairs)
+
+  # Hexbin plot
+  p1 <- ggplot(data, aes_string(x = feature_pairs[1], y = feature_pairs[2]))
+  p1 <- p1 + stat_binhex(alpha = 1, bins = bins)
+  p1 <- p1 + scale_fill_gradientn(colours = c("darkblue", "lightblue", "green", "yellow", "orange", "red"))
+  p1 <- p1 + coord_cartesian(range(data[, feature_pairs[1]]), range(data[, feature_pairs[2]]))
+  p1 <- p1 + opts(legend.position = "none") + xlab(fp_orig[1]) + ylab(fp_orig[2])
+
+  # Marginal plot for first feature (x-axis)
+  p2 <- ggplot(data, aes_string(x = feature_pairs[1]))
+  p2 <- p2 + stat_density(fill = "darkblue")
+  p2 <- p2 + coord_cartesian(range(data[, feature_pairs[1]]))
+
+  # Marginal plot for second feature (y-axis)
+  p3 <- ggplot(data, aes_string(x = feature_pairs[2]))
+  p3 <- p3 + stat_density(fill = "darkblue")
+  p3 <- p3 + coord_flip(range(data[, feature_pairs[2]]))
+  
+  gt <- ggplot_gtable(ggplot_build(p1))
+  gt2 <- ggplot_gtable(ggplot_build(p2))
+  gt3 <- ggplot_gtable(ggplot_build(p3))
+  
+  
+  gt1 <- gtable_add_cols(gt, unit(0.3, "null"), pos = -1)
+  gt1 <- gtable_add_rows(gt1, unit(0.3, "null"), pos = 0)
+  
+  gt1 <- gtable_add_grob(gt1, gt2$grobs[[which(gt2$layout$name == "panel")]],
+                         1, 4, 1, 4)
+  gt1 <- gtable_add_grob(gt1, gt2$grobs[[which(gt2$layout$name == "axis-l")]],
+                         1, 3, 1, 3, clip = "off")
+  
+  gt1 <- gtable_add_grob(gt1, gt3$grobs[[which(gt3$layout$name == "panel")]],
+                         4, 6, 4, 6)
+
+  gt1 <- gtable_add_grob(gt1, gt3$grobs[[which(gt3$layout$name == "axis-b")]],
+                         5, 6, 5, 6, clip = "off")
+  
+  grid.newpage()
+  grid.draw(gt1)
+  
+  invisible(gt1)
 }

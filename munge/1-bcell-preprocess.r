@@ -2,7 +2,8 @@ library(ProjectTemplate)
 load.project()
 
 panel <- "Bcell"
-path_Lyoplate <- "/loc/no-backup/ramey/Lyoplate/"
+
+path_Lyoplate <- "/shared/silo_researcher/Gottardo_R/ramey_working/Lyoplate"
 
 # There is a bug in the built-in 'list.dirs' function. The argument 'full.names'
 # does not work as advertised. After a quick Google search, others recently have
@@ -15,6 +16,7 @@ centers <- sapply(strsplit(centers, split = "/"), tail, n = 1)
 markers_of_interest <- c("FSC-A", "SSC-A", "CD3", "CD19", "CD20", "IgD", "CD27",
                          "CD38", "CD24")
 
+# TODO: Remove the hard-coded centers after Excel files are updated
 centers <- c("Miami", "NHLBI", "Stanford", "UCLA")
 
 # For each center, we construct a flowSet of FCS files after compensating and
@@ -52,5 +54,9 @@ for (i in seq.int(2, length(fs_list))) {
 
 gs_bcell <- GatingSet(flow_set)
 
-archive(gs_bcell, file = file.path(path_Lyoplate, "gs-Bcell.tar"))
+# TODO: Load this in load.project()
+library(flowIncubator)
+
+# Archives the results
+save_gs(gs_bcell, path = file.path(path_Lyoplate, "gs-bcell"), overwrite = TRUE)
 
