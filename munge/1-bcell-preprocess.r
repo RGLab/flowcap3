@@ -3,7 +3,7 @@ load.project()
 
 panel <- "Bcell"
 
-path_Lyoplate <- "/shared/silo_researcher/Gottardo_R/ramey_working/Lyoplate"
+path_Lyoplate <- "/loc/no-backup/ramey/Lyoplate"
 
 # There is a bug in the built-in 'list.dirs' function. The argument 'full.names'
 # does not work as advertised. After a quick Google search, others recently have
@@ -54,9 +54,6 @@ for (i in seq.int(2, length(fs_list))) {
 
 gs_bcell <- GatingSet(flow_set)
 
-# TODO: Load this in load.project()
-library(flowIncubator)
-
 # Archives the results
-save_gs(gs_bcell, path = file.path(path_Lyoplate, "gs-bcell"), overwrite = TRUE)
+save_gs(gs_bcell, path = file.path(path_Lyoplate, "gs-bcell"))
 

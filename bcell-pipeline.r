@@ -2,10 +2,9 @@ library(ProjectTemplate)
 load.project()
 
 panel <- "Bcell"
-gs_path <- "/shared/silo_researcher/Gottardo_R/ramey_working/Lyoplate/gs-bcell"
+gs_path <- "/loc/no-backup/ramey/Lyoplate/gs-bcell"
 
 # Loads the archived gatingSet object
-library(flowIncubator)
 gs_bcell <- load_gs(gs_path)
 
 # Creates the gating-template object from a CSV file

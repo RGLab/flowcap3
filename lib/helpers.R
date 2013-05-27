@@ -124,8 +124,6 @@ pretty_popstats <- function(population_stats, nodes = 1) {
 #' @param panel the panel type
 #' @return the compensation matrix
 compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell")) {
-  require('xlsx')
-
   panel <- match.arg(panel)
   comp_controls <- read.xlsx2(file = xlsx, sheetName = "Comp controls",
                               startRow = 3, stringsAsFactors = FALSE)
@@ -218,7 +216,6 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell")) {
 flowset_lyoplate <- function(path, xlsx, comp_matrix, center,
                              panel = c("Bcell", "Tcell", "Treg"),
                              min_limit = -100) {
-  require('xlsx')
   panel <- match.arg(panel)
 
   exp_samples <- read.xlsx2(file = xlsx, sheetName = "Exp samples",
