@@ -61,23 +61,22 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
     marker <- flow_frame@description[[marker_idx]]
     channel <- flow_frame@description[[channel_idx]]
 
-    if (is.null(marker)) {
-      # In the case that the marker name is not given, we set the marker and channel
-      # names both to that given in the channel.
-      marker <- channel
-
-      # Updates the marker information in the flow_frame with the channel
-      flow_frame@description[[marker_idx]] <- channel
-      flow_frame@parameters@data$desc[j] <- channel
-    } else {
-      # If marker name contains additional info, remove everything after the space. (e.g., "IgD V500" to "IgD")
-      marker <- strsplit(marker, " ")[[1]][1]
-
-      # In the special case of Yale, they used "19" instead of "CD19". In this case,
-      # we manually update the marker name.
+    # In the case the marker name is given, we swap the marker and channel
+    # names.
+    if (!is.null(marker)) {
+      # For the following list of marker names, we manually update the names so
+      # that they are standard across centers.
       if (marker == "19") {
         marker <- "CD19"
+      } else if (marker == "LIVE_GREEN") {
+        marker <- "LIVE GREEN"
+      } else if (marker == "IGD") {
+        marker <- "IgD"
       }
+
+      # If marker name contains additional info, remove everything after the
+      # space. (e.g., "IgD V500" to "IgD")
+      marker <- strsplit(marker, " ")[[1]][1]
 
       # Updates the channel information in the flow_frame with the marker
       flow_frame@description[[channel_idx]] <- marker

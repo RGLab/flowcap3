@@ -17,7 +17,7 @@ markers_of_interest <- c("FSC-A", "SSC-A", "CD3", "CD19", "CD20", "IgD", "CD27",
                          "CD38", "CD24")
 
 # TODO: Remove the hard-coded centers after Excel files are updated
-centers <- c("Miami", "NHLBI", "Stanford", "UCLA")
+centers <- c("Baylor", "CIMR", "Miami", "NHLBI", "Stanford", "UCLA")
 
 # For each center, we construct a flowSet of FCS files after compensating and
 # transforming the flowSet created from the FCS files in the center's
