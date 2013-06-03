@@ -16,8 +16,20 @@ centers <- sapply(strsplit(centers, split = "/"), tail, n = 1)
 markers_of_interest <- c("FSC-A", "SSC-A", "CD3", "CD19", "CD20", "IgD", "CD27",
                          "CD38", "CD24")
 
-# TODO: Remove the hard-coded centers after Excel files are updated
-centers <- c("Baylor", "CIMR", "Miami", "NHLBI", "Stanford", "UCLA")
+comp_matrices <- lapply(centers, function(center) {
+  message("Center: ", center)
+  path <- file.path(path_Lyoplate, center)
+
+  # The filename of the manually edited Excel file: assumed to be in getwd()
+  xlsx <- dir(pattern = center)
+  try(compensation_lyoplate(path = path, xlsx = xlsx, panel = panel, plot = FALSE, pregate = FALSE))
+})
+names(comp_matrices) <- centers
+
+for (i in seq_along(comp_matrices)) {
+  write.csv(comp_matrices[[i]], file = paste0("compensation/", names(comp_matrices)[i], ".csv"))
+}
+
 
 # For each center, we construct a flowSet of FCS files after compensating and
 # transforming the flowSet created from the FCS files in the center's
@@ -28,13 +40,12 @@ fs_list <- lapply(centers, function(center) {
 
   # The filename of the manually edited Excel file: assumed to be in getwd()
   xlsx <- dir(pattern = center)
-  comp_matrix <- compensation_lyoplate(path = path, xlsx = xlsx, panel = panel)
 
   # Constructs a flowSet object for the current center. The flowSet will be
   # compensated and transformed.
   flow_set <- flowset_lyoplate(path = path, xlsx = xlsx,
-                               comp_matrix = comp_matrix, center = center,
-                               panel = panel)
+                               comp_matrix = comp_matrices[[center]],
+                               center = center, panel = panel)
 
   # Swaps the channels and markers for the current 'flowSet' object. This ensures
   # that we can 'rbind2' the 'GatingSetList' below because the stain names do not
@@ -44,6 +55,8 @@ fs_list <- lapply(centers, function(center) {
 
   flow_set
 })
+
+
 
 # Merges the list of flowSet objects into a single flowSet object. This code is
 # verbose but it circumvents an issue introduced recently in flowIncubator.

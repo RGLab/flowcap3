@@ -118,12 +118,40 @@ pretty_popstats <- function(population_stats, nodes = 1) {
 
 #' Constructs compensation matrix from controls for Lyoplate 3.0
 #'
+#' From the compensation control files listed in the given Excel file, we
+#' construct a spillover matrix.
+#'
+#' Given that the compensation controls likely have debris, we gate these out
+#' using \code{\link{flowClust}}. We consider several candidate values for the
+#' number of clusters to use in the fitted model and select the value that
+#' optimizes the \code{criterion} selected. After the best model is selected, we
+#' remove clusters having a relatively small number of cells. To do this, we
+#' keep the largest clusters so that the total proportion of cells exceeds
+#' \code{cells_kept}.
+#'
 #' @param path the path that contains the compensation control FCS files
 #' @param xlsx the name of the XLSX (Excel) file (full path)
 #' @param panel the panel type
+#' @param pregate Should the compensation controls be pregating using
+#' \code{flowClust} before constructing the spillover matrices? (Default: Yes)
+#' @param plot Should the \code{flowClust} summary figures be plotted?
+#' @param cells_kept the proportion of cells that are guaranteed to be kept.
+#' See details.
+#' @param K the candidate number of clusters to consider via \code{flowClust}
+#' @param trans the transformation parameter that is passed to \code{flowClust}
+#' @param nu.est the degrees of freedom estimation code that is passed to
+#' \code{flowClust}
+#' @param criterion the criterion to use for the automatic selection of \code{K}.
+#' By default, the \code{ICL} is used
+#' @param ... additional arguments passed to \code{flowClust}
 #' @return the compensation matrix
-compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell")) {
+compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell"),
+                                  pregate = TRUE, plot = FALSE,
+                                  cells_kept = 0.75, K = 2:6, trans = 0,
+                                  nu.est = 2, criterion = c("ICL", "BIC"), ...) {
   panel <- match.arg(panel)
+  criterion <- match.arg(criterion)
+  
   comp_controls <- read.xlsx2(file = xlsx, sheetName = "Comp controls",
                               startRow = 3, stringsAsFactors = FALSE)
 
@@ -184,19 +212,54 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell")) {
   # Applies flowClust to SSC-A and FSC-A with K = 3 to remove outliers and
   # debris before constructing a compensation matrix.
   # Keeps the densest cluster and gates out the rest of the cells.
-  comp_flowset <- fsApply(comp_flowset, function(flow_frame) {
-    tmix_filter <- tmixFilter(filterId = "Lymph", parameters = c("FSC-A", "SSC-A"), K = 3)
-    tmix_results <- filter(flow_frame, tmix_filter)
-    split(x = flow_frame, f = tmix_results, population = which.max(tmix_results@w))[[1]]
-  })
+  if (pregate) {
+    comp_flowset <- fsApply(comp_flowset, function(flow_frame) {
+      message("Compensation Filename: ", keyword(flow_frame)$FIL)
+      fc_out <- flowClust(x = flow_frame, varNames = c("FSC-A", "SSC-A"), K = K,
+                          trans = trans, nu.est = nu.est, criterion = criterion, ...)
+      optimal_K <- K[fc_out@index]
+      message("Optimal Value of K: ", optimal_K)
 
+      message("Cluster Proportions:")
+      cluster_proportions <- fc_out[[fc_out@index]]@w
+      print(cluster_proportions)
+
+      # Here, we compute the cumulative proportions of the clusters fitted in
+      # order from the largest cluster to the smallest cluster. We then keep only
+      # the largest clusters such that the sum of the proportions exceeds the
+      # cutoff specified by the user.
+      prop_cumsum <- cumsum(sort(cluster_proportions, decreasing = TRUE))
+      num_clusters <- which(prop_cumsum > cells_kept)[1]
+      clusters_kept <- order(cluster_proportions, decreasing = TRUE)[seq_len(num_clusters)]
+
+      if (plot) {
+        # These two lines are from 'stats:::plot.lm'. They prompt the user for
+        # input before proceeding with the next plot.
+        oask <- devAskNewPage(TRUE)
+        on.exit(devAskNewPage(oask))
+      
+        plot(sapply(fc_out, function(x) x@ICL), type = "l",
+             xlab = "Candiate Values of K", ylab = "ICL")
+        plot(flow_frame, fc_out, main = "flowClust Fit for Optimal Value of K")
+      }
+
+      # Extract a flowFrame object containing the largest clusters
+      split(x = flow_frame, fc_out, population = list(clusters_kept))[[1]]
+    })
+  }
+  
   # Constructs the compensation (spillover) matrix
   # The index of 'unstained' is the last of the FCS files read in.
   # A regular expression in 'patt' indicates the markers that we want to compensate.
   #    These are given in the XLSX file.
+
+  # Use all columns except for FSCA, SSC, and Time for compensation
+  comp_colnames <- colnames(comp_flowset)
+  comp_colnames <- comp_colnames[!grepl("FSC|SSC|Time", comp_colnames)]
+
   spillover(comp_flowset, unstained = length(comp_flowset),
             patt = paste(comp_controls$Marker, collapse = "|"),
-            useNormFilt = FALSE, method = "mean")
+            useNormFilt = FALSE, method = "median", regexpr = TRUE)
 }
 
 #' Constructs a flowSet for the specified center for Lyoplate 3.0
