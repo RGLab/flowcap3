@@ -122,35 +122,21 @@ pretty_popstats <- function(population_stats, nodes = 1) {
 #' construct a spillover matrix.
 #'
 #' Given that the compensation controls likely have debris, we gate these out
-#' using \code{\link{flowClust}}. We consider several candidate values for the
-#' number of clusters to use in the fitted model and select the value that
-#' optimizes the \code{criterion} selected. After the best model is selected, we
-#' remove clusters having a relatively small number of cells. To do this, we
-#' keep the largest clusters so that the total proportion of cells exceeds
-#' \code{cells_kept}.
+#' using \code{\link{flowClust}}. 
 #'
 #' @param path the path that contains the compensation control FCS files
 #' @param xlsx the name of the XLSX (Excel) file (full path)
-#' @param panel the panel type
 #' @param pregate Should the compensation controls be pregating using
 #' \code{flowClust} before constructing the spillover matrices? (Default: Yes)
 #' @param plot Should the \code{flowClust} summary figures be plotted?
-#' @param cells_kept the proportion of cells that are guaranteed to be kept.
-#' See details.
-#' @param K the candidate number of clusters to consider via \code{flowClust}
-#' @param trans the transformation parameter that is passed to \code{flowClust}
-#' @param nu.est the degrees of freedom estimation code that is passed to
-#' \code{flowClust}
-#' @param criterion the criterion to use for the automatic selection of \code{K}.
-#' By default, the \code{ICL} is used
-#' @param ... additional arguments passed to \code{flowClust}
+#' @param method the summary statistic to use in constructing the spillover
+#' matrix. This value is passed along to \code{\link[flowCore]{spillover}}.
+#' @param additional arguments passed to \code{pregate_flowset}
 #' @return the compensation matrix
-compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell"),
-                                  pregate = TRUE, plot = FALSE,
-                                  cells_kept = 0.75, K = 2:6, trans = 0,
-                                  nu.est = 2, criterion = c("ICL", "BIC"), ...) {
-  panel <- match.arg(panel)
-  criterion <- match.arg(criterion)
+compensation_lyoplate <- function(path, xlsx, pregate = TRUE, plot = FALSE,
+                                  method = c("median", "mean", "mode"), ...) {
+                                  
+  method <- match.arg(method)
   
   comp_controls <- read.xlsx2(file = xlsx, sheetName = "Comp controls",
                               startRow = 3, stringsAsFactors = FALSE)
@@ -183,18 +169,11 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell"),
   # which case, we omit them from the compensation controls data.frame.
   comp_controls <- subset(comp_controls, !is.na(FCS.file.name))
 
-  # Next, we select only the files for the current panel.
-  # To do this, we remove the spaces in the tube names and then use a string lookup
-  # to identify the controls.
-  comp_controls$Applies.to.tube <- gsub(" ", "", comp_controls$Applies.to.tube)
-  tubes_split <- strsplit(comp_controls$Applies.to.tube, ",")
-
-  if (panel == "Bcell") {
-    which_files <- sapply(tubes_split, function(x) any(x %in% c("all", "B", "Bcell")))
-  } else if (panel == "Tcell") {
-    which_files <- sapply(tubes_split, function(x) any(x %in% c("all", "T", "Tcell")))
-  }
-  comp_controls <- comp_controls[which_files, ]
+  # Some centers use one compensation control for several markers that share the
+  # same channel (e.g., NHLBI), while other centers use one compensation control
+  # per marker (e.g., CIMR). To handle this, we use only the first FCS file if
+  # the channel names are non-unique.
+  comp_controls <- subset(comp_controls, !duplicated(comp_controls$Marker))
 
   # Constructs a flowSet of the compensation control FCS files along with the
   # unstained control FCS file
@@ -209,43 +188,16 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell"),
 
   comp_flowset <- read.flowSet(FCS_files)
 
-  # Applies flowClust to SSC-A and FSC-A with K = 3 to remove outliers and
-  # debris before constructing a compensation matrix.
-  # Keeps the densest cluster and gates out the rest of the cells.
+#  marginal_plots <- lapply(seq_along(comp_flowset), function(i) {
+#    message("Compensation Control: ", i)
+#    marginal_gating_plot(data = exprs(comp_flowset[[i]]), feature_pairs = c("FSC-A", "SSC-A"))
+#  })
+
+  # Applies flowClust to SSC-A and FSC-A to remove outliers and debris before
+  # constructing a compensation matrix. Keeps the densest clusters and gates out
+  # the rest of the cells.
   if (pregate) {
-    comp_flowset <- fsApply(comp_flowset, function(flow_frame) {
-      message("Compensation Filename: ", keyword(flow_frame)$FIL)
-      fc_out <- flowClust(x = flow_frame, varNames = c("FSC-A", "SSC-A"), K = K,
-                          trans = trans, nu.est = nu.est, criterion = criterion, ...)
-      optimal_K <- K[fc_out@index]
-      message("Optimal Value of K: ", optimal_K)
-
-      message("Cluster Proportions:")
-      cluster_proportions <- fc_out[[fc_out@index]]@w
-      print(cluster_proportions)
-
-      # Here, we compute the cumulative proportions of the clusters fitted in
-      # order from the largest cluster to the smallest cluster. We then keep only
-      # the largest clusters such that the sum of the proportions exceeds the
-      # cutoff specified by the user.
-      prop_cumsum <- cumsum(sort(cluster_proportions, decreasing = TRUE))
-      num_clusters <- which(prop_cumsum > cells_kept)[1]
-      clusters_kept <- order(cluster_proportions, decreasing = TRUE)[seq_len(num_clusters)]
-
-      if (plot) {
-        # These two lines are from 'stats:::plot.lm'. They prompt the user for
-        # input before proceeding with the next plot.
-        oask <- devAskNewPage(TRUE)
-        on.exit(devAskNewPage(oask))
-      
-        plot(sapply(fc_out, function(x) x@ICL), type = "l",
-             xlab = "Candiate Values of K", ylab = "ICL")
-        plot(flow_frame, fc_out, main = "flowClust Fit for Optimal Value of K")
-      }
-
-      # Extract a flowFrame object containing the largest clusters
-      split(x = flow_frame, fc_out, population = list(clusters_kept))[[1]]
-    })
+    comp_flowset <- pregate_flowset(comp_flowset, plot = plot, ...)
   }
   
   # Constructs the compensation (spillover) matrix
@@ -259,7 +211,7 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell"),
 
   spillover(comp_flowset, unstained = length(comp_flowset),
             patt = paste(comp_controls$Marker, collapse = "|"),
-            useNormFilt = FALSE, method = "median", regexpr = TRUE)
+            useNormFilt = FALSE, method = method, regexpr = TRUE)
 }
 
 #' Constructs a flowSet for the specified center for Lyoplate 3.0
@@ -275,8 +227,8 @@ compensation_lyoplate <- function(path, xlsx, panel = c("Bcell", "Tcell"),
 #' @param panel the panel type
 #' @param min_limit the minimum limit to be passed to \code{read.flowSet}
 #' @return a \code{flowSet} object
-flowset_lyoplate <- function(path, xlsx, comp_matrix, center,
-                             panel = c("Bcell", "Tcell", "Treg"),
+flowset_lyoplate <- function(path, xlsx, comp_matrix, transform = TRUE, center,
+                             panel = c("B cell", "T cell", "Treg", "DC/mono/NK", "Th1/2/17"),
                              min_limit = -100) {
   panel <- match.arg(panel)
 
@@ -288,9 +240,6 @@ flowset_lyoplate <- function(path, xlsx, comp_matrix, center,
   exp_samples$Replicate <- as.character(as.numeric(exp_samples$Replicate))
   exp_samples$Sample <- as.character(as.numeric(exp_samples$Sample))
   exp_samples$Center <- center
-
-  # Removes whitespace from Panel names
-  exp_samples$Panel <- gsub(" ", "", exp_samples$Panel)
 
   # Subsets the data for the specified panel
   exp_samples <- exp_samples[exp_samples$Panel == panel, ]
@@ -316,8 +265,10 @@ flowset_lyoplate <- function(path, xlsx, comp_matrix, center,
   # matrix constructed from the compensation controls. However, note that
   # FCStrans compensates the samples using the spillover matrix stored in the
   # keywords.
-  trans <- transformList(from = colnames(comp_matrix), tfun = FCSTransTransform())
-  exp_flowset <- transform(exp_flowset, trans)
+  if (transform){
+    trans <- transformList(from = colnames(comp_matrix), tfun = FCSTransTransform())
+    exp_flowset <- transform(exp_flowset, trans)
+  }
   
   exp_flowset
 }
@@ -441,4 +392,68 @@ marginal_gating_plot <- function(data, feature_pairs, bins = 30) {
   grid.draw(gt1)
   
   invisible(gt1)
+}
+
+#' Pregates a flowSet before compensation or transformation
+#'
+#' We consider several candidate values for the number of clusters to use in the
+#' fitted model and select the value that optimizes the \code{criterion}
+#' selected. After the best model is selected, we remove clusters having a
+#' relatively small number of cells. To do this, we keep the largest clusters so
+#' that the total proportion of cells exceeds \code{cells_kept}.
+#'
+#' @param flow_set a \code{flowSet} object
+#' @param cells_kept the proportion of cells that are guaranteed to be kept.
+#' See details.
+#' @param K the candidate number of clusters to consider via \code{flowClust}
+#' @param trans the transformation parameter that is passed to \code{flowClust}
+#' @param nu.est the degrees of freedom estimation code that is passed to
+#' \code{flowClust}
+#' @param criterion the criterion to use for the automatic selection of \code{K}.
+#' By default, the \code{ICL} is used
+#' @param ... additional arguments passed to \code{flowClust}
+pregate_flowset <- function(flow_set, cells_kept = 0.7, K = 2:6, trans = 0,
+                            nu.est = 2, criterion = c("ICL", "BIC"),
+                            verbose = TRUE, plot = TRUE, ...) {
+
+  criterion <- match.arg(criterion)
+
+  fsApply(flow_set, function(flow_frame) {
+    if (verbose) {
+      message("Filename: ", keyword(flow_frame)$FIL)
+    }
+
+    fc_out <- flowClust(x = flow_frame, varNames = c("FSC-A", "SSC-A"), K = K,
+                        trans = trans, nu.est = nu.est, criterion = criterion, ...)
+    optimal_K <- K[fc_out@index]
+    cluster_proportions <- fc_out[[fc_out@index]]@w
+
+    if (verbose) {
+      message("Optimal Value of K: ", optimal_K)
+      message("Cluster Proportions:")
+      print(cluster_proportions)
+    }
+
+    # Here, we compute the cumulative proportions of the clusters fitted in
+    # order from the largest cluster to the smallest cluster. We then keep only
+    # the largest clusters such that the sum of the proportions exceeds the
+    # cutoff specified by the user.
+    prop_cumsum <- cumsum(sort(cluster_proportions, decreasing = TRUE))
+    num_clusters <- which(prop_cumsum > cells_kept)[1]
+    clusters_kept <- order(cluster_proportions, decreasing = TRUE)[seq_len(num_clusters)]
+
+    if (plot) {
+      # These two lines are from 'stats:::plot.lm'. They prompt the user for
+      # input before proceeding with the next plot.
+      oask <- devAskNewPage(TRUE)
+      on.exit(devAskNewPage(oask))
+      
+      plot(x = K, y = sapply(fc_out, function(x) x@ICL), type = "l",
+           xlab = "Candiate Values of K", ylab = "ICL")
+      plot(flow_frame, fc_out, main = "flowClust Fit for Optimal Value of K")
+    }
+
+    # Extract a flowFrame object containing the largest clusters
+    split(x = flow_frame, fc_out, population = list(clusters_kept))[[1]]
+  })
 }
