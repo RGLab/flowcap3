@@ -21,7 +21,7 @@ compensation_matrices <- lapply(centers, function(center) {
   # The filename of the manually edited Excel file: assumed to be in getwd()
   xlsx <- dir(pattern = center)
   compensation_lyoplate(path = path, xlsx = xlsx, plot = FALSE, pregate = TRUE,
-                        min = c(2e4, 5e4), level = 0.99)
+                        min = c(2e4, 5e4), level = 0.99, plot_markers = FALSE)
 })
 names(compensation_matrices) <- centers
 

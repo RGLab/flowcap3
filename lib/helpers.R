@@ -134,7 +134,8 @@ pretty_popstats <- function(population_stats, nodes = 1) {
 #' @param additional arguments passed to \code{pregate_flowset}
 #' @return the compensation matrix
 compensation_lyoplate <- function(path, xlsx, pregate = TRUE, plot = FALSE,
-                                  method = c("median", "mean", "mode"), ...) {
+                                  method = c("mode", "median", "mean"),
+                                  plot_debris = FALSE, plot_markers = FALSE, ...) {
                                   
   method <- match.arg(method)
   
@@ -188,16 +189,33 @@ compensation_lyoplate <- function(path, xlsx, pregate = TRUE, plot = FALSE,
 
   comp_flowset <- read.flowSet(FCS_files)
 
-#  marginal_plots <- lapply(seq_along(comp_flowset), function(i) {
-#    message("Compensation Control: ", i)
-#    marginal_gating_plot(data = exprs(comp_flowset[[i]]), feature_pairs = c("FSC-A", "SSC-A"))
-#  })
+  oask <- devAskNewPage(TRUE)
+  on.exit(devAskNewPage(oask))
+
+  if (plot_debris) {
+    marginal_plots <- lapply(seq_along(comp_flowset), function(i) {
+      message("Compensation Control: ", i)
+      marginal_gating_plot(data = exprs(comp_flowset[[i]]), feature_pairs = c("FSC-A", "SSC-A"))
+    })
+  }
 
   # Applies flowClust to SSC-A and FSC-A to remove outliers and debris before
   # constructing a compensation matrix. Keeps the densest clusters and gates out
   # the rest of the cells.
   if (pregate) {
     comp_flowset <- pregate_flowset(comp_flowset, plot = plot, ...)
+  }
+
+  if (plot_markers) {
+    for (i in seq_along(comp_flowset)) {
+      filename <- keyword(comp_flowset[[i]])$GUID
+      message("Compensation Control Filename: ", filename)
+      x <- exprs(comp_flowset[[i]])
+      m_x <- melt(x)[, -1]
+      colnames(m_x) <- c("Marker", "value")
+      p <- ggplot(m_x, aes(x = value)) + geom_density() + facet_wrap(~ Marker, scales = "free")
+      plot(p + ggtitle(filename))
+    }
   }
   
   # Constructs the compensation (spillover) matrix
@@ -211,7 +229,8 @@ compensation_lyoplate <- function(path, xlsx, pregate = TRUE, plot = FALSE,
 
   spillover(comp_flowset, unstained = length(comp_flowset),
             patt = paste(comp_controls$Marker, collapse = "|"),
-            useNormFilt = FALSE, method = method, regexpr = TRUE)
+            useNormFilt = FALSE, method = method, stain_match = "regexpr",
+            pregate = TRUE, plot = FALSE)
 }
 
 #' Constructs a flowSet for the specified center for Lyoplate 3.0
