@@ -13,6 +13,10 @@ centers <- list.dirs(path_Lyoplate, recursive = FALSE, full.names = FALSE)
 centers <- sapply(strsplit(centers, split = "/"), tail, n = 1)
 centers <- setdiff(centers, "gating-sets")
 
+# Because BSMS apparently did not include IgD in their FCS files, we remove them
+# from consideration for now.
+centers <- setdiff(centers, "BSMS")
+
 # These are the markers that we will keep after the data have been preprocessed.
 markers_of_interest <- c("FSC-A", "SSC-A", "CD3", "CD19", "CD20", "IgD", "CD27",
                          "CD38", "CD24")
