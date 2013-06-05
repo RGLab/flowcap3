@@ -76,13 +76,20 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
         marker <- "LIVE GREEN"
       } else if (marker == "IGD") {
         marker <- "IgD"
-      } else if (marker == "HLA" || marker == "HLADR") {
+      } else if (marker %in% c("HLA", "HLADR")) {
         marker <- "HLA-DR"
       } else if (marker == "CD197") {
         marker <- "CCR7"
       } else if (marker == "CD194") {
         marker <- "CCR4"
-      }      
+      } else if (marker == "CD11C") {
+        marker <- "CD11c"
+      } else if (marker %in% c("CD3CD19CD20", "CD3+19+20", "CD3_CD19_CD20",
+                               "CD3+CD19+CD20+", "Lineage", "CD3+19+20")) {
+        marker <- "CD3+CD19+CD20"
+      } else if (marker == "CD196") {
+        marker <- "CCR6"
+      }
 
       # Updates the channel information in the flow_frame with the marker
       flow_frame@description[[channel_idx]] <- marker
