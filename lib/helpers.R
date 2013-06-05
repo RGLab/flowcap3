@@ -76,11 +76,13 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
         marker <- "LIVE GREEN"
       } else if (marker == "IGD") {
         marker <- "IgD"
-      } else if (marker == "HLA") {
+      } else if (marker == "HLA" || marker == "HLADR") {
         marker <- "HLA-DR"
       } else if (marker == "CD197") {
         marker <- "CCR7"
-      }
+      } else if (marker == "CD194") {
+        marker <- "CCR4"
+      }      
 
       # Updates the channel information in the flow_frame with the marker
       flow_frame@description[[channel_idx]] <- marker
