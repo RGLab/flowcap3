@@ -64,6 +64,10 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
     # In the case the marker name is given, we swap the marker and channel
     # names.
     if (!is.null(marker)) {
+      # If marker name contains additional info, remove everything after the
+      # space. (e.g., "IgD V500" to "IgD")
+      marker <- strsplit(marker, " ")[[1]][1]
+
       # For the following list of marker names, we manually update the names so
       # that they are standard across centers.
       if (marker == "19") {
@@ -72,11 +76,11 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
         marker <- "LIVE GREEN"
       } else if (marker == "IGD") {
         marker <- "IgD"
+      } else if (marker == "HLA") {
+        marker <- "HLA-DR"
+      } else if (marker == "CD197") {
+        marker <- "CCR7"
       }
-
-      # If marker name contains additional info, remove everything after the
-      # space. (e.g., "IgD V500" to "IgD")
-      marker <- strsplit(marker, " ")[[1]][1]
 
       # Updates the channel information in the flow_frame with the marker
       flow_frame@description[[channel_idx]] <- marker
