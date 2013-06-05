@@ -72,7 +72,7 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
       # that they are standard across centers.
       if (marker == "19") {
         marker <- "CD19"
-      } else if (marker == "LIVE_GREEN") {
+      } else if (marker %in% c("LIVE", "LIVE_GREEN")) {
         marker <- "LIVE GREEN"
       } else if (marker == "IGD") {
         marker <- "IgD"
@@ -89,6 +89,8 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
         marker <- "CD3+CD19+CD20"
       } else if (marker == "CD196") {
         marker <- "CCR6"
+      } else if (marker == "CD183") {
+        marker <- "CXCR3"
       }
 
       # Updates the channel information in the flow_frame with the marker
