@@ -72,8 +72,8 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
       # that they are standard across centers.
       if (marker == "19") {
         marker <- "CD19"
-      } else if (marker %in% c("LIVE", "LIVE_GREEN")) {
-        marker <- "LIVE GREEN"
+      } else if (marker %in% c("LIVE", "LIVE_GREEN", "Live/Dead")) {
+        marker <- "Live"
       } else if (marker == "IGD") {
         marker <- "IgD"
       } else if (marker %in% c("HLA", "HLADR")) {

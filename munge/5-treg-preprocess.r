@@ -18,8 +18,10 @@ centers <- setdiff(centers, "gating-sets")
 centers <- setdiff(centers, "BSMS")
 
 # These are the markers that we will keep after the data have been preprocessed.
-markers_of_interest <- c("FSC-A", "SSC-A", "CD25", "CD4", "CCR4", "CD127",
-                         "CD45RO", "CD3", "HLA-DR")
+# NOTE: We did not include FSC-H for singlet gates because Miami did include the
+#. channel
+markers_of_interest <- c("FSC-A", "SSC-A", "Live", "CD25", "CD4", "CCR4",
+                         "CD127", "CD45RO", "CD3", "HLA-DR")
 
 # For each center, we construct a flowSet of FCS files after compensating and
 # transforming the flowSet created from the FCS files in the center's
