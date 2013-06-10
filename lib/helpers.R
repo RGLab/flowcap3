@@ -150,7 +150,8 @@ pretty_popstats <- function(population_stats, nodes = 1) {
 #' @return the compensation matrix
 compensation_lyoplate <- function(path, xlsx, pregate = TRUE, plot = FALSE,
                                   method = c("mode", "median", "mean"),
-                                  plot_debris = FALSE, plot_markers = FALSE, ...) {
+                                  plot_debris = FALSE, plot_markers = FALSE,
+                                  plot_spillover = FALSE, ...) {
                                   
   method <- match.arg(method)
   
@@ -245,7 +246,7 @@ compensation_lyoplate <- function(path, xlsx, pregate = TRUE, plot = FALSE,
   spillover(comp_flowset, unstained = length(comp_flowset),
             patt = paste(comp_controls$Marker, collapse = "|"),
             useNormFilt = FALSE, method = method, stain_match = "regexpr",
-            pregate = TRUE, plot = FALSE)
+            pregate = TRUE, plot = plot_spillover)
 }
 
 #' Constructs a flowSet for the specified center for Lyoplate 3.0
@@ -446,7 +447,7 @@ marginal_gating_plot <- function(data, feature_pairs, bins = 30) {
 #' @param criterion the criterion to use for the automatic selection of \code{K}.
 #' By default, the \code{ICL} is used
 #' @param ... additional arguments passed to \code{flowClust}
-pregate_flowset <- function(flow_set, cells_kept = 0.7, K = 2:6, trans = 0,
+pregate_flowset <- function(flow_set, cells_kept = 0.8, K = 2:4, trans = 0,
                             nu.est = 2, criterion = c("ICL", "BIC"),
                             verbose = TRUE, plot = TRUE, ...) {
 
@@ -490,4 +491,9 @@ pregate_flowset <- function(flow_set, cells_kept = 0.7, K = 2:6, trans = 0,
     # Extract a flowFrame object containing the largest clusters
     split(x = flow_frame, fc_out, population = list(clusters_kept))[[1]]
   })
+}
+
+quantile_negatives <- function(x, ...) {
+  x <- x[x < 0]
+  quantile(x, ...)
 }
