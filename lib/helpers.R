@@ -64,34 +64,8 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
     # In the case the marker name is given, we swap the marker and channel
     # names.
     if (!is.null(marker)) {
-      # If marker name contains additional info, remove everything after the
-      # space. (e.g., "IgD V500" to "IgD")
-      marker <- strsplit(marker, " ")[[1]][1]
-
-      # For the following list of marker names, we manually update the names so
-      # that they are standard across centers.
-      if (marker == "19") {
-        marker <- "CD19"
-      } else if (marker %in% c("LIVE", "LIVE_GREEN", "Live/Dead")) {
-        marker <- "Live"
-      } else if (marker == "IGD") {
-        marker <- "IgD"
-      } else if (marker %in% c("HLA", "HLADR")) {
-        marker <- "HLA-DR"
-      } else if (marker == "CD197") {
-        marker <- "CCR7"
-      } else if (marker == "CD194") {
-        marker <- "CCR4"
-      } else if (marker == "CD11C") {
-        marker <- "CD11c"
-      } else if (marker %in% c("CD3CD19CD20", "CD3+19+20", "CD3_CD19_CD20",
-                               "CD3+CD19+CD20+", "Lineage", "CD3+19+20")) {
-        marker <- "CD3+CD19+CD20"
-      } else if (marker == "CD196") {
-        marker <- "CCR6"
-      } else if (marker == "CD183") {
-        marker <- "CXCR3"
-      }
+      # Converts the marker names to a common name
+      marker <- marker_conversion(marker)
 
       # Updates the channel information in the flow_frame with the marker
       flow_frame@description[[channel_idx]] <- marker
@@ -107,6 +81,41 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
   # Subset to markers of interest
   flow_frame[, markers_keep]
 }
+
+#' Converts the Lyoplate marker names to a common name
+#'
+#' For the following list of marker names, we manually update the names so
+#' that they are standard across centers.
+marker_conversion <- Vectorize(function(marker) {
+  # If marker name contains additional info, remove everything after the
+  # space. (e.g., "IgD V500" to "IgD")
+  marker <- strsplit(marker, " ")[[1]][1]
+
+  if (marker == "19") {
+    marker <- "CD19"
+  } else if (marker %in% c("LIVE", "LIVE_GREEN", "Live/Dead")) {
+    marker <- "Live"
+  } else if (marker == "IGD") {
+    marker <- "IgD"
+  } else if (marker %in% c("HLA", "HLADR")) {
+    marker <- "HLA-DR"
+  } else if (marker == "CD197") {
+    marker <- "CCR7"
+  } else if (marker == "CD194") {
+    marker <- "CCR4"
+  } else if (marker == "CD11C") {
+    marker <- "CD11c"
+  } else if (marker %in% c("CD3CD19CD20", "CD3+19+20", "CD3_CD19_CD20",
+                           "CD3+CD19+CD20+", "Lineage", "CD3+19+20")) {
+    marker <- "CD3+CD19+CD20"
+  } else if (marker == "CD196") {
+    marker <- "CCR6"
+  } else if (marker == "CD183") {
+    marker <- "CXCR3"
+  }
+
+  marker
+})
 
 
 #' Prettifies the table returned by population stats for the pipeline
@@ -298,47 +307,26 @@ flowset_lyoplate <- function(path, xlsx, comp_matrix,
   }
   exp_flowset <- compensate(exp_flowset, comp_matrix)
 
-  # Applies the FCStrans transformation to the experimental samples.
-  # The channels transformed correspond to the column names of the compensation
-  # matrix constructed from the compensation controls.
-  if (transform == "FCSTrans") {
-    w_list <- list()
+  # Saves list of estimated FCSTrans widths
+  width_list <- list()
 
-    for (channel in colnames(comp_matrix)) {
-      # Based on Parks et al. (2006) in Cytometry A, we select "the fifth
-      # percentile of all events that are below zero as this reference
-      # value."
-      cutoff <- -111
+  for (channel in colnames(comp_matrix)) {
+    # Based on Parks et al. (2006) in Cytometry A, we select "the fifth
+    # percentile of all events that are below zero as this reference value."
+    quantiles_channel <- fsApply(exp_flowset, function(flow_frame) {
+      quantile_negatives(exprs(flow_frame)[, channel], probs = 0.05, names = FALSE)
+    })
+    quantile_median <- median(quantiles_channel, na.rm = TRUE)
+    w_channel <- abs(0.5 * (4.5 * log(10) - log(2^18 / abs(quantile_median))))
 
-      quantiles_channel <- fsApply(exp_flowset, function(flow_frame) {
-        quantile_negatives(exprs(flow_frame)[, channel], probs = 0.05, names = FALSE)
-      })
-      quantile_median <- median(quantiles_channel, na.rm = TRUE)
-
-      if (is.na(quantile_median)) {
-        warning("No quantiles available. Setting 'w' to NULL...")
-        w_channel <- NULL
-      } else {
-        w_channel <- abs(0.5 * (4.5 * log(10) - log(2^18 / abs(quantile_median))))
-      }
-      w_list[[channel]] <- w_channel
-
-      trans_channel <- transformList(from = channel,
-                                     tfun = FCSTransTransform(w = w_channel, cutoff = cutoff))
-      exp_flowset <- transform(exp_flowset, trans_channel)
-    }
-  } else if (transform == "estimateLogicle") {
-    logicle_trans <- openCyto:::estimateMedianLogicle(exp_flowset,
-                                                      channels = colnames(comp_matrix))
-    exp_flowset <- transform(exp_flowset, logicle_trans)
+    width_list[[channel]] <- w_channel
   }
 
-  out <- list()
-  out$flow_set <- exp_flowset
-  if (transform == "FCSTrans") {
-    out$w <- w_list
-  }
-  out
+  widths <- melt(width_list)
+  colnames(widths) <- c("width", "Channel")
+  widths$Center <- center
+
+  list(flow_set = exp_flowset, widths = widths)
 }
 
 ##################################################

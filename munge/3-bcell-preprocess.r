@@ -24,49 +24,74 @@ markers_of_interest <- c("FSC-A", "SSC-A", "Live", "CD3", "CD19", "CD20", "IgD",
 # For each center, we construct a flowSet of FCS files after compensating and
 # transforming the flowSet created from the FCS files in the center's
 # subdirectory under 'path_Lyoplate'.
+message("Compensating and Estimating Transformation Parameters")
 lyoplate_list <- lapply(centers, function(center) {
   message("Center: ", center)
-  center <- "NHLBI"
   path <- file.path(path_Lyoplate, center)
 
   # The filename of the manually edited Excel file: assumed to be in getwd()
   xlsx <- dir(pattern = center)
 
-  # Constructs a flowSet object for the current center. The flowSet will be
-  # compensated and transformed.
+  # Constructs a compensated flowSet object for the current center
   lyoplate_out <- flowset_lyoplate(path = path, xlsx = xlsx,
                                    comp_matrix = compensation_matrices[[center]],
-                                   transform = "FCSTrans", center = center, panel = panel)
+                                   center = center, panel = panel)
 
-  # Swaps the channels and markers for the current 'flowSet' object. This ensures
-  # that we can 'rbind2' the 'GatingSetList' below because the stain names do not
-  # match otherwise.
-  lyoplate_out$flow_set <- fsApply(lyoplate_out$flow_set, preprocess_flowframe,
-                                   markers_keep = markers_of_interest)
-
-  w <- melt(lyoplate_out$w)
-  colnames(w) <- c("w", "Channel")
-  w$Marker <- openCyto:::channels2markers(lyoplate_out$flow_set[[1]], channels = w$Channel)
-
-  lyoplate_out$w <- w
+  # Maps channels to markers
+  lyoplate_out$widths$Marker <- sapply(lyoplate_out$widths$Channel, function(channel) {
+    openCyto:::getChannelMarker(lyoplate_out$flow_set[[1]], channel)$desc
+  })
 
   lyoplate_out
 })
 names(lyoplate_list) <- centers
 
-# Maps channels to markers
-lyoplate_list <- lapply(centers, function(center) {
-  channels <- lyoplate_list[[center]]$w$Channel
+# Saves estimated widths ('w') for FCSTrans
+widths_FCSTrans <- lapply(lyoplate_list, "[[", "widths")
+widths_FCSTrans <- do.call(rbind, widths_FCSTrans)
 
-  markers <- sapply(channels, function(channel) {
-    openCyto:::getChannelMarker(lyoplate_list[[center]]$flow_set[[1]], channel)$name
-  })
+# Converts the marker names to a common name
+widths_FCSTrans$Marker <- marker_conversion(widths_FCSTrans$Marker)
+save(widths_FCSTrans, file = "widths_FCSTrans.RData")
 
-  lyoplate_list[[center]]$w$Marker <- markers
-  
-  lyoplate_list[[center]]
+# Calculates the median of the widths across centers for each marker
+widths_summary <- with(widths_FCSTrans, aggregate(width, by = list(Marker), median))
+colnames(widths_summary) <- c("Marker", "median_width")
+# TODO: Check custom transformations here
+widths_FCSTrans <- plyr:::join(widths_FCSTrans, widths_summary)
+
+
+# Applies the FCStrans transformation to each center
+message ("Transforming flowSets for each center")
+fs_list <- lapply(lyoplate_list, "[[", "flow_set")
+dev_null <- with(widths_FCSTrans, mapply(function(center, channel, width) {
+  message("Center: ", center, " -- Channel: ", channel)
+  trans_channel <- transformList(from = channel,
+                                 tfun = FCSTransTransform(w = width))
+  fs_list[[center]] <<- transform(fs_list[[center]], trans_channel)
+
+  NULL
+}, Center, Channel, median_width))
+
+
+foo <- fs_list
+
+message ("Swapping flowSet channels and markers")
+fs_list <- lapply(centers, function(center) {
+  message("Center: ", center)
+
+  # Swaps the channels and markers for the current 'flowSet' object. This ensures
+  # that we can 'rbind2' the 'GatingSetList' below because the stain names do not
+  # match otherwise.
+  fsApply(fs_list[[center]], preprocess_flowframe,
+          markers_keep = markers_of_interest)
 })
-names(lyoplate_list) <- centers
+names(fs_list) <- centers
+
+
+
+
+
 
 # Merges the list of flowSet objects into a single flowSet object. This code is
 # verbose but it circumvents an issue introduced recently in flowIncubator.
@@ -77,16 +102,10 @@ for (i in seq.int(2, length(lyoplate_list))) {
 
 gs_bcell <- GatingSet(flow_set)
 
-# Saves estimated values of 'w' for FCSTrans
-w_FCSTrans <- lapply(centers, function(center) {
-  cbind(Center = center, lyoplate_list[[center]]$w)
-})
-w_FCSTrans <- do.call(rbind, w_FCSTrans)
-save(w_FCSTrans, file = "FCSTrans_transformation_estimates.RData")
 
 # Archives the results
 save_gs(gs_bcell, path = file.path(path_Lyoplate, "gating-sets/gs-bcell"))
 
 # Plots FCSTrans estimates
-p <- ggplot(w_FCSTrans, aes(x = Center, weight = w)) + geom_bar() + facet_wrap(~ Marker)
+p <- ggplot(widths_FCSTrans, aes(x = Center, weight = width)) + geom_bar() + facet_wrap(~ Marker)
 p + ylab("Estimate of FCSTrans Width, w")
