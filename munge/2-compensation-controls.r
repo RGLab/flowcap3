@@ -4,7 +4,7 @@ load.project()
 set.seed(42)
 path_Lyoplate <- "/loc/no-backup/ramey/Lyoplate"
 
-save_CSV <- FALSE
+save_CSV <- TRUE
 
 # There is a bug in the built-in 'list.dirs' function. The argument 'full.names'
 # does not work as advertised. After a quick Google search, others recently have
@@ -16,13 +16,14 @@ centers <- setdiff(centers, "gating-sets")
 
 compensation_matrices <- lapply(centers, function(center) {
   message("Center: ", center)
-  center <- "Yale"
   path <- file.path(path_Lyoplate, center)
 
   # The filename of the manually edited Excel file: assumed to be in getwd()
   xlsx <- dir(pattern = center)
-  compensation_lyoplate(path = path, xlsx = xlsx, plot = FALSE, pregate = TRUE, K = 4:5, cells_kept = 0.8,
-                        min = c(2e4, 5e4), level = 0.9, plot_markers = FALSE, method = "median", plot_spillover = FALSE)
+  compensation_lyoplate(path = path, xlsx = xlsx, plot = FALSE, pregate = TRUE,
+                        K = 4:5, cells_kept = 0.8, min = c(2e4, 5e4),
+                        level = 0.9, plot_markers = FALSE, method = "median",
+                        plot_spillover = FALSE)
 })
 names(compensation_matrices) <- centers
 
@@ -58,5 +59,3 @@ if (save_CSV) {
 # Archives the results
 save(compensation_matrices, file = "cache/compensation-matrices.RData")
 
-
-trace("spillover", signature = "flowSet", tracer = browser)

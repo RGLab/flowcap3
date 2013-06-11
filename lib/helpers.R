@@ -260,12 +260,12 @@ compensation_lyoplate <- function(path, xlsx, pregate = TRUE, plot = FALSE,
 #' @param comp_matrix a compensation matrix
 #' @param center a character string denoting the current center
 #' @param panel the panel type
-#' @param min_limit the minimum limit to be passed to \code{read.flowSet}
 #' @return a \code{flowSet} object
-flowset_lyoplate <- function(path, xlsx, comp_matrix, transform = TRUE, center,
-                             panel = c("B cell", "T cell", "Treg", "DC/mono/NK", "Th1/2/17"),
-                             min_limit = -100) {
+flowset_lyoplate <- function(path, xlsx, comp_matrix,
+                             transform = c("FCSTrans", "estimateLogicle"), center,
+                             panel = c("B cell", "T cell", "Treg", "DC/mono/NK", "Th1/2/17")) {
   panel <- match.arg(panel)
+  transform <- match.arg(transform)
 
   exp_samples <- read.xlsx2(file = xlsx, sheetName = "Exp samples",
                             startRow = 3, stringsAsFactors = FALSE)
@@ -281,7 +281,7 @@ flowset_lyoplate <- function(path, xlsx, comp_matrix, transform = TRUE, center,
 
   # Reads in the FCS files for the specified panel
   fcs_files <- file.path(path, exp_samples$name)
-  exp_flowset <- read.flowSet(fcs_files, min.limit = min_limit)
+  exp_flowset <- read.flowSet(fcs_files)
 
   # Updates the flowSet's pData
   exp_pdata <- pData(exp_flowset)
@@ -293,19 +293,52 @@ flowset_lyoplate <- function(path, xlsx, comp_matrix, transform = TRUE, center,
   varMetadata(phenoData(exp_flowset)) <- varM
 
   # Compensates and transforms flowSet for current center
+  if (is.null(comp_matrix)) {
+    comp_matrix <- keyword(exp_flowset[[1]])$SPILL
+  }
   exp_flowset <- compensate(exp_flowset, comp_matrix)
 
   # Applies the FCStrans transformation to the experimental samples.
   # The channels transformed correspond to the column names of the compensation
-  # matrix constructed from the compensation controls. However, note that
-  # FCStrans compensates the samples using the spillover matrix stored in the
-  # keywords.
-  if (transform){
-    trans <- transformList(from = colnames(comp_matrix), tfun = FCSTransTransform())
-    exp_flowset <- transform(exp_flowset, trans)
+  # matrix constructed from the compensation controls.
+  if (transform == "FCSTrans") {
+    w_list <- list()
+
+    for (channel in colnames(comp_matrix)) {
+      # Based on Parks et al. (2006) in Cytometry A, we select "the fifth
+      # percentile of all events that are below zero as this reference
+      # value."
+      cutoff <- -111
+
+      quantiles_channel <- fsApply(exp_flowset, function(flow_frame) {
+        quantile_negatives(exprs(flow_frame)[, channel], probs = 0.05, names = FALSE)
+      })
+      quantile_median <- median(quantiles_channel, na.rm = TRUE)
+
+      if (is.na(quantile_median)) {
+        warning("No quantiles available. Setting 'w' to NULL...")
+        w_channel <- NULL
+      } else {
+        w_channel <- abs(0.5 * (4.5 * log(10) - log(2^18 / abs(quantile_median))))
+      }
+      w_list[[channel]] <- w_channel
+
+      trans_channel <- transformList(from = channel,
+                                     tfun = FCSTransTransform(w = w_channel, cutoff = cutoff))
+      exp_flowset <- transform(exp_flowset, trans_channel)
+    }
+  } else if (transform == "estimateLogicle") {
+    logicle_trans <- openCyto:::estimateMedianLogicle(exp_flowset,
+                                                      channels = colnames(comp_matrix))
+    exp_flowset <- transform(exp_flowset, logicle_trans)
   }
-  
-  exp_flowset
+
+  out <- list()
+  out$flow_set <- exp_flowset
+  if (transform == "FCSTrans") {
+    out$w <- w_list
+  }
+  out
 }
 
 ##################################################
