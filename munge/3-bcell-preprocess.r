@@ -45,6 +45,7 @@ lyoplate_list <- lapply(centers, function(center) {
   lyoplate_out
 })
 names(lyoplate_list) <- centers
+fs_list <- lapply(lyoplate_list, "[[", "flow_set")
 
 # Saves estimated widths ('w') for FCSTrans
 widths_FCSTrans <- lapply(lyoplate_list, "[[", "widths")
@@ -60,10 +61,12 @@ colnames(widths_summary) <- c("Marker", "median_width")
 # TODO: Check custom transformations here
 widths_FCSTrans <- plyr:::join(widths_FCSTrans, widths_summary)
 
+# Plots FCSTrans estimates
+# p <- ggplot(widths_FCSTrans, aes(x = Center, weight = width)) + geom_bar() + facet_wrap(~ Marker)
+# p + ylab("Estimate of FCSTrans Width, w")
 
 # Applies the FCStrans transformation to each center
 message ("Transforming flowSets for each center")
-fs_list <- lapply(lyoplate_list, "[[", "flow_set")
 dev_null <- with(widths_FCSTrans, mapply(function(center, channel, width) {
   message("Center: ", center, " -- Channel: ", channel)
   trans_channel <- transformList(from = channel,
@@ -76,28 +79,23 @@ dev_null <- with(widths_FCSTrans, mapply(function(center, channel, width) {
 
 foo <- fs_list
 
+# Swaps the channels and markers for the current 'flowSet' object. This ensures
+# that we can 'rbind2' the 'GatingSetList' below because the stain names do not
+# match otherwise.
 message ("Swapping flowSet channels and markers")
 fs_list <- lapply(centers, function(center) {
   message("Center: ", center)
 
-  # Swaps the channels and markers for the current 'flowSet' object. This ensures
-  # that we can 'rbind2' the 'GatingSetList' below because the stain names do not
-  # match otherwise.
   fsApply(fs_list[[center]], preprocess_flowframe,
           markers_keep = markers_of_interest)
 })
 names(fs_list) <- centers
 
-
-
-
-
-
 # Merges the list of flowSet objects into a single flowSet object. This code is
 # verbose but it circumvents an issue introduced recently in flowIncubator.
-flow_set <- lyoplate_list[[1]]$flow_set
+flow_set <- fs_list[[1]]
 for (i in seq.int(2, length(lyoplate_list))) {
-  flow_set <- rbind2(flow_set, lyoplate_list[[i]]$flow_set)
+  flow_set <- rbind2(flow_set, fs_list[[i]])
 }
 
 gs_bcell <- GatingSet(flow_set)
@@ -106,6 +104,3 @@ gs_bcell <- GatingSet(flow_set)
 # Archives the results
 save_gs(gs_bcell, path = file.path(path_Lyoplate, "gating-sets/gs-bcell"))
 
-# Plots FCSTrans estimates
-p <- ggplot(widths_FCSTrans, aes(x = Center, weight = width)) + geom_bar() + facet_wrap(~ Marker)
-p + ylab("Estimate of FCSTrans Width, w")
