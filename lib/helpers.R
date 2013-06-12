@@ -518,3 +518,62 @@ quantile_negatives <- function(x, ...) {
   x <- x[x < 0]
   quantile(x, ...)
 }
+
+
+#' Plots transformations for two markers of interest to examine 
+# If NA is for one of the marker_widths, then uses the 'width_applied'
+plot_transformations <- function(center, marker1, marker2, marker1_widths,
+                                 marker2_widths, num_cores = 8) {
+  if (all(is.na(marker1_widths))) {
+    marker1_widths <- subset(widths_FCSTrans, Center == center & Marker == marker1)$width_applied
+  }
+  
+  if (all(is.na(marker2_widths))) {
+    marker2_widths <- subset(widths_FCSTrans, Center == center & Marker == marker2)$width_applied
+  }
+  
+  candidate_widths <- expand.grid(marker1_widths, marker2_widths)
+  colnames(candidate_widths) <- c("Width1", "Width2")
+  
+  candidate_widths$Marker1 <- marker1
+  candidate_widths$Marker2 <- marker2
+  
+  candidate_widths$Channel1 <- subset(widths_FCSTrans, Center == center & Marker == marker1)$Channel
+  candidate_widths$Channel2 <- subset(widths_FCSTrans, Center == center & Marker == marker2)$Channel
+  
+  marker_folder <- file.path("marker-plots", paste(center, marker1, marker2, sep = "-"))
+  dir.create(marker_folder)
+  
+  dev_null <- mclapply(seq_len(nrow(candidate_widths)), function(i) {
+    temp_flowset <- fs_list[[center]]
+  
+    marker1 <- candidate_widths$Marker1[i]
+    marker2 <- candidate_widths$Marker2[i]
+    channel1 <- candidate_widths$Channel1[i]
+    channel2 <- candidate_widths$Channel2[i]
+    width1 <- round(candidate_widths$Width1[i], 3)
+    width2 <- round(candidate_widths$Width2[i], 3)
+  
+    trans_channel1 <- transformList(from = channel1,
+                                    tfun = FCSTransTransform(w = width1))
+    temp_flowset <- transform(temp_flowset, trans_channel1)
+  
+    trans_channel2 <- transformList(from = channel2,
+                                    tfun = FCSTransTransform(w = width2))
+    temp_flowset <- transform(temp_flowset, trans_channel2)
+  
+    plot_title <- paste0(marker1, ": ", width1, " -- ", marker2, ": ", width2)
+  
+    # Creates plot for each sample. Example: 1-sample2.png
+    for (j in seq_along(temp_flowset)) {
+      x <- exprs(temp_flowset[[j]])
+      x <- x[x[, "SSC-A"] > 0, ]
+  
+      png(file.path(marker_folder, paste0(i, "-sample", j, ".png")))
+      plot(hexbin(x[, c(channel1, channel2)]), main = plot_title, xlab = marker1, ylab = marker2)
+      dev.off()
+    }  
+  
+    NULL
+  }, mc.cores = num_cores)
+}

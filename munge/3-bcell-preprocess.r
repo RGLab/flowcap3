@@ -53,13 +53,63 @@ widths_FCSTrans <- do.call(rbind, widths_FCSTrans)
 
 # Converts the marker names to a common name
 widths_FCSTrans$Marker <- marker_conversion(widths_FCSTrans$Marker)
-save(widths_FCSTrans, file = "widths_FCSTrans.RData")
 
 # Calculates the median of the widths across centers for each marker
 widths_summary <- with(widths_FCSTrans, aggregate(width, by = list(Marker), median))
 colnames(widths_summary) <- c("Marker", "median_width")
-# TODO: Check custom transformations here
 widths_FCSTrans <- plyr:::join(widths_FCSTrans, widths_summary)
+
+# TODO: Check custom transformations here
+widths_FCSTrans$width_applied <- widths_FCSTrans$median_width
+
+# For Baylor, CIMR, and Miami we use the center's estimated widths
+which_centers <- widths_FCSTrans$Center %in% c("Baylor", "CIMR", "Miami")
+widths_FCSTrans <- within(widths_FCSTrans,
+                          width_applied <- replace(width_applied, which_centers,
+                                                   width[which_centers]))
+
+
+
+
+plot_transformations("Miami", "CD38", "CD24", c(1, 1.25), c(2))
+
+
+
+
+
+
+
+
+# Plots transformations for various combinations of widths
+plot_transformations("Baylor", "CD38", "CD24", c(2, 2.25, 2.5, 2.75, 3), c(1, 1.25, 1.5, 1.75, 2))
+plot_transformations("Miami", "CD38", "CD24", c(2, 2.25, 2.5, 2.75, 3), c(1, 1.25, 1.5, 1.75, 2))
+plot_transformations("NHLBI", "CD38", "CD24", c(2, 2.25, 2.5, 2.75, 3), c(1, 1.25, 1.5, 1.75, 2))
+plot_transformations("NHLBI", "IgD", "CD27", c(1, 1.5, 2, 2.5), c(1, 1.5, 2, 2.5))
+plot_transformations("Stanford", "CD38", "CD24", c(1, 1.5, 2, 2.5, 3), c(1, 1.5, 2, 2.5))
+plot_transformations("UCLA", "CD3", "CD19", c(0.5, 0.75, 1, 1.25, 1.5), c(1.5, 1.75, 2, 2.25))
+plot_transformations("UCLA", "CD3", "CD20", c(0.5, 0.75, 1, 1.25, 1.5), c(1.5, 1.75, 2, 2.25, 2.5))
+plot_transformations("UCLA", "CD38", "CD24", c(2, 2.25, 2.5, 2.75, 3), c(1, 1.25, 1.5, 1.75, 2))
+plot_transformations("UCLA", "IgD", "CD27", c(1, 1.5, 2, 2.5), c(1, 1.5, 2, 2.5))
+plot_transformations("Yale", "CD3", "CD19", c(0.5, 0.75, 1, 1.25, 1.5), c(1.5, 1.75, 2, 2.25))
+plot_transformations("Yale", "CD3", "CD20", c(0.5, 0.75, 1, 1.25, 1.5), c(1.5, 1.75, 2, 2.25, 2.5))
+plot_transformations("Yale", "CD38", "CD24", c(2, 2.25, 2.5, 2.75, 3), c(1, 1.25, 1.5, 1.75, 2))
+plot_transformations("Yale", "IgD", "CD27", c(1, 1.5, 2, 2.5), c(1, 1.5, 2, 2.5))
+
+
+
+system("zip -9 -r marker-plots.zip marker-plots/")
+system("scp marker-plots.zip 10.6.156.144:~/Dropbox/rglab/flowcap3/")
+
+
+
+# TODO: Baylor - Use median Live
+# TODO: CIMR - Use median Live
+# TODO: Miami - Use median Live (investigate)
+quit(save = "no")
+
+
+
+save(widths_FCSTrans, file = "widths_FCSTrans.RData")
 
 # Plots FCSTrans estimates
 # p <- ggplot(widths_FCSTrans, aes(x = Center, weight = width)) + geom_bar() + facet_wrap(~ Marker)
