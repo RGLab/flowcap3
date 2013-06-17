@@ -128,7 +128,6 @@ for (i in seq.int(2, length(lyoplate_list))) {
 
 gs_bcell <- GatingSet(flow_set)
 
-
 # Archives the results
 save_gs(gs_bcell, path = file.path(path_Lyoplate, "gating-sets/gs-bcell"))
 

@@ -1,7 +1,7 @@
 library(ProjectTemplate)
 load.project()
 
-panel <- "DC/mono/NK"
+panel <- "Th1/2/17"
 
 path_Lyoplate <- "/loc/no-backup/ramey/Lyoplate"
 
@@ -13,13 +13,13 @@ centers <- list.dirs(path_Lyoplate, recursive = FALSE, full.names = FALSE)
 centers <- sapply(strsplit(centers, split = "/"), tail, n = 1)
 centers <- setdiff(centers, "gating-sets")
 
-# Because BSMS apparently did not include CD56 in their FCS files, we remove them
-# from consideration for now.
+# Because BSMS apparently did not include CXCR3 in their FCS files, we
+# remove them from consideration for now.
 centers <- setdiff(centers, "BSMS")
 
 # These are the markers that we will keep after the data have been preprocessed.
-markers_of_interest <- c("FSC-A", "SSC-A", "Live", "CD56", "CD123", "CD11c",
-                         "CD16", "CD3+CD19+CD20", "CD14", "HLA-DR")
+markers_of_interest <- c("FSC-A", "SSC-A", "Live", "CXCR3", "CD4", "CCR6", "CD38",
+                         "CD8", "CD3", "HLA-DR")
 
 # For each center, we construct a flowSet of FCS files after compensating and
 # transforming the flowSet created from the FCS files in the center's
@@ -66,7 +66,7 @@ trans_widths <- subset(trans_widths, select = c(Center, Marker, Channel, width_a
 colnames(trans_widths)[4] <- "Width"
 
 # Saves transformations to a CSV file
-write.csv(trans_widths, file = "data/DC-transformations.csv", row.names = FALSE)
+write.csv(trans_widths, file = "data/thelper-transformations.csv", row.names = FALSE)
 
 # Applies the FCStrans transformation to each center
 message ("Transforming flowSets for each center")
@@ -99,7 +99,7 @@ for (i in seq.int(2, length(lyoplate_list))) {
   flow_set <- rbind2(flow_set, fs_list[[i]])
 }
 
-gs_DC <- GatingSet(flow_set)
+gs_thelper <- GatingSet(flow_set)
 
 # Archives the results
-save_gs(gs_DC, path = file.path(path_Lyoplate, "gating-sets/gs-DC"))
+save_gs(gs_thelper, path = file.path(path_Lyoplate, "gating-sets/gs-thelper"))
