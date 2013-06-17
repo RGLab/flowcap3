@@ -48,86 +48,64 @@ names(lyoplate_list) <- centers
 fs_list <- lapply(lyoplate_list, "[[", "flow_set")
 
 # Saves estimated widths ('w') for FCSTrans
-widths_FCSTrans <- lapply(lyoplate_list, "[[", "widths")
-widths_FCSTrans <- do.call(rbind, widths_FCSTrans)
+trans_widths <- lapply(lyoplate_list, "[[", "widths")
+trans_widths <- do.call(rbind, trans_widths)
 
 # Converts the marker names to a common name
-widths_FCSTrans$Marker <- marker_conversion(widths_FCSTrans$Marker)
+trans_widths$Marker <- marker_conversion(trans_widths$Marker)
 
 # Calculates the median of the widths across centers for each marker
-widths_summary <- with(widths_FCSTrans, aggregate(width, by = list(Marker), median))
+widths_summary <- with(trans_widths, aggregate(width, by = list(Marker), median))
 colnames(widths_summary) <- c("Marker", "median_width")
-widths_FCSTrans <- plyr:::join(widths_FCSTrans, widths_summary)
-
-# TODO: Check custom transformations here
-widths_FCSTrans$width_applied <- widths_FCSTrans$median_width
+trans_widths <- plyr:::join(trans_widths, widths_summary)
+trans_widths$width_applied <- trans_widths$median_width
 
 # For Baylor, CIMR, and Miami we use the center's estimated widths
-which_centers <- widths_FCSTrans$Center %in% c("Baylor", "CIMR", "Miami")
-widths_FCSTrans <- within(widths_FCSTrans,
+which_centers <- trans_widths$Center %in% c("Baylor", "CIMR", "Miami")
+trans_widths <- within(trans_widths,
                           width_applied <- replace(width_applied, which_centers,
                                                    width[which_centers]))
 
+# The automated transformations are inadequate for CD24/CD38 for all centers.
+# Furthermore, the transformations for UCLA and Yale were poor for almost
+# markers. In these cases, we subjectively selected transformations using a
+# Shiny app. We apply these transformations here.
 
+# First, we merge the data.frames for the estimated transformations and the
+# subjective transformations.
+trans_widths <- merge(trans_widths, bcell.custom.transformations, by = c("Center", "Marker"),
+             all.x = T, all.y = F)
 
+# We apply custom for CD24/CD38 -- all centers.
+trans_widths <- within(trans_widths, width_applied[Marker == "CD24"] <- Width[Marker == "CD24"])
+trans_widths <- within(trans_widths, width_applied[Marker == "CD38"] <- Width[Marker == "CD38"])
 
-plot_transformations("Miami", "CD38", "CD24", c(1, 1.25), c(2))
+# We apply custom transformations for all UCLA and Yale markers.
+trans_widths <- within(trans_widths, width_applied[Center == "UCLA"] <- Width[Center == "UCLA"])
+trans_widths <- within(trans_widths, width_applied[Center == "Yale"] <- Width[Center == "Yale"])
 
+# Lastly, for the Live marker, we use the median width.
+trans_widths <- within(trans_widths, width_applied[Marker == "Live"] <- median_width[Marker == "Live"])
 
+# Updates data.frame to include only one width...not 3
+# This would be confusing otherwise
+trans_widths <- subset(trans_widths, select = c(Center, Marker, Channel, width_applied))
+colnames(trans_widths)[4] <- "Width"
 
-
-
-
-
-
-# Plots transformations for various combinations of widths
-plot_transformations("Baylor", "CD38", "CD24", c(2, 2.25, 2.5, 2.75, 3), c(1, 1.25, 1.5, 1.75, 2))
-plot_transformations("Miami", "CD38", "CD24", c(2, 2.25, 2.5, 2.75, 3), c(1, 1.25, 1.5, 1.75, 2))
-plot_transformations("NHLBI", "CD38", "CD24", c(2, 2.25, 2.5, 2.75, 3), c(1, 1.25, 1.5, 1.75, 2))
-plot_transformations("NHLBI", "IgD", "CD27", c(1, 1.5, 2, 2.5), c(1, 1.5, 2, 2.5))
-plot_transformations("Stanford", "CD38", "CD24", c(1, 1.5, 2, 2.5, 3), c(1, 1.5, 2, 2.5))
-plot_transformations("UCLA", "CD3", "CD19", c(0.5, 0.75, 1, 1.25, 1.5), c(1.5, 1.75, 2, 2.25))
-plot_transformations("UCLA", "CD3", "CD20", c(0.5, 0.75, 1, 1.25, 1.5), c(1.5, 1.75, 2, 2.25, 2.5))
-plot_transformations("UCLA", "CD38", "CD24", c(2, 2.25, 2.5, 2.75, 3), c(1, 1.25, 1.5, 1.75, 2))
-plot_transformations("UCLA", "IgD", "CD27", c(1, 1.5, 2, 2.5), c(1, 1.5, 2, 2.5))
-plot_transformations("Yale", "CD3", "CD19", c(0.5, 0.75, 1, 1.25, 1.5), c(1.5, 1.75, 2, 2.25))
-plot_transformations("Yale", "CD3", "CD20", c(0.5, 0.75, 1, 1.25, 1.5), c(1.5, 1.75, 2, 2.25, 2.5))
-plot_transformations("Yale", "CD38", "CD24", c(2, 2.25, 2.5, 2.75, 3), c(1, 1.25, 1.5, 1.75, 2))
-plot_transformations("Yale", "IgD", "CD27", c(1, 1.5, 2, 2.5), c(1, 1.5, 2, 2.5))
-
-
-
-system("zip -9 -r marker-plots.zip marker-plots/")
-system("scp marker-plots.zip 10.6.156.144:~/Dropbox/rglab/flowcap3/")
-
-
-
-# TODO: Baylor - Use median Live
-# TODO: CIMR - Use median Live
-# TODO: Miami - Use median Live (investigate)
-quit(save = "no")
-
-
-
-save(widths_FCSTrans, file = "widths_FCSTrans.RData")
-
-# Plots FCSTrans estimates
-# p <- ggplot(widths_FCSTrans, aes(x = Center, weight = width)) + geom_bar() + facet_wrap(~ Marker)
-# p + ylab("Estimate of FCSTrans Width, w")
+# Saves transformations to a CSV file
+write.csv(trans_widths, file = "data/bcell-transformations.csv", row.names = FALSE)
 
 # Applies the FCStrans transformation to each center
 message ("Transforming flowSets for each center")
-dev_null <- with(widths_FCSTrans, mapply(function(center, channel, width) {
+dev_null <- with(trans_widths, mapply(function(center, channel, width) {
   message("Center: ", center, " -- Channel: ", channel)
   trans_channel <- transformList(from = channel,
                                  tfun = FCSTransTransform(w = width))
   fs_list[[center]] <<- transform(fs_list[[center]], trans_channel)
 
   NULL
-}, Center, Channel, median_width))
+}, Center, Channel, Width))
 
-
-foo <- fs_list
 
 # Swaps the channels and markers for the current 'flowSet' object. This ensures
 # that we can 'rbind2' the 'GatingSetList' below because the stain names do not
