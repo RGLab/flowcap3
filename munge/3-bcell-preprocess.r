@@ -2,8 +2,8 @@ library(ProjectTemplate)
 load.project()
 
 panel <- "B cell"
-
 path_Lyoplate <- "/loc/no-backup/ramey/Lyoplate"
+plot <- FALSE
 
 # There is a bug in the built-in 'list.dirs' function. The argument 'full.names'
 # does not work as advertised. After a quick Google search, others recently have
@@ -47,66 +47,6 @@ lyoplate_list <- lapply(centers, function(center) {
 names(lyoplate_list) <- centers
 fs_list <- lapply(lyoplate_list, "[[", "flow_set")
 
-# Saves estimated widths ('w') for FCSTrans
-trans_widths <- lapply(lyoplate_list, "[[", "widths")
-trans_widths <- do.call(rbind, trans_widths)
-
-# Converts the marker names to a common name
-trans_widths$Marker <- marker_conversion(trans_widths$Marker)
-
-# Calculates the median of the widths across centers for each marker
-widths_summary <- with(trans_widths, aggregate(width, by = list(Marker), median))
-colnames(widths_summary) <- c("Marker", "median_width")
-trans_widths <- plyr:::join(trans_widths, widths_summary)
-trans_widths$width_applied <- trans_widths$median_width
-
-# For Baylor, CIMR, and Miami we use the center's estimated widths
-which_centers <- trans_widths$Center %in% c("Baylor", "CIMR", "Miami")
-trans_widths <- within(trans_widths,
-                          width_applied <- replace(width_applied, which_centers,
-                                                   width[which_centers]))
-
-# The automated transformations are inadequate for CD24/CD38 for all centers.
-# Furthermore, the transformations for UCLA and Yale were poor for almost
-# markers. In these cases, we subjectively selected transformations using a
-# Shiny app. We apply these transformations here.
-
-# First, we merge the data.frames for the estimated transformations and the
-# subjective transformations.
-trans_widths <- merge(trans_widths, bcell.custom.transformations, by = c("Center", "Marker"),
-             all.x = T, all.y = F)
-
-# We apply custom for CD24/CD38 -- all centers.
-trans_widths <- within(trans_widths, width_applied[Marker == "CD24"] <- Width[Marker == "CD24"])
-trans_widths <- within(trans_widths, width_applied[Marker == "CD38"] <- Width[Marker == "CD38"])
-
-# We apply custom transformations for all UCLA and Yale markers.
-trans_widths <- within(trans_widths, width_applied[Center == "UCLA"] <- Width[Center == "UCLA"])
-trans_widths <- within(trans_widths, width_applied[Center == "Yale"] <- Width[Center == "Yale"])
-
-# Lastly, for the Live marker, we use the median width.
-trans_widths <- within(trans_widths, width_applied[Marker == "Live"] <- median_width[Marker == "Live"])
-
-# Updates data.frame to include only one width...not 3
-# This would be confusing otherwise
-trans_widths <- subset(trans_widths, select = c(Center, Marker, Channel, width_applied))
-colnames(trans_widths)[4] <- "Width"
-
-# Saves transformations to a CSV file
-write.csv(trans_widths, file = "data/bcell-transformations.csv", row.names = FALSE)
-
-# Applies the FCStrans transformation to each center
-message ("Transforming flowSets for each center")
-dev_null <- with(trans_widths, mapply(function(center, channel, width) {
-  message("Center: ", center, " -- Channel: ", channel)
-  trans_channel <- transformList(from = channel,
-                                 tfun = FCSTransTransform(w = width))
-  fs_list[[center]] <<- transform(fs_list[[center]], trans_channel)
-
-  NULL
-}, Center, Channel, Width))
-
-
 # Swaps the channels and markers for the current 'flowSet' object. This ensures
 # that we can 'rbind2' the 'GatingSetList' below because the stain names do not
 # match otherwise.
@@ -126,7 +66,116 @@ for (i in seq.int(2, length(lyoplate_list))) {
   flow_set <- rbind2(flow_set, fs_list[[i]])
 }
 
+# To better estimate transformation parameters, we first apply three gates:
+# 1. Boundary on FSC-A and SSC-A
+# 2. Debris
+# 3. Lymphocytes
 gs_bcell <- GatingSet(flow_set)
+
+# Creates the gating-template object from a CSV file
+gt_csv <- "gt-preprocess.csv"
+gating_template <- gatingTemplate(gt_csv, panel)
+
+# Boundary gate
+boundary_gate <- rectangleGate(filterId = "boundary", "FSC-A" = c(0, 2.5e5),
+                               "SSC-A" = c(0, 2.5e5))
+add(gs_bcell, boundary_gate)
+recompute(gs_bcell)
+
+# Applies OpenCyto to GatingSet
+gating(gating_template, gs_bcell, mc.cores = 8, parallel_type = "multicore",
+       prior_group = "Center")
+
+# Next, we extract the flowSet the lymphocyte subpopulation
+fs_lymph <- getData(gs_bcell, "lymph")
+
+# For each center, we compute the 5th percentile of each marker's negative values
+# These percentiles determine the center-specific transformation for each marker
+fs_split <- split(fs_lymph, pData(fs_lymph)$Center)
+widths_quantiles <- lapply(fs_split, function(fs) {
+  quantiles <- fsApply(fs, each_col, quantile_negatives, probs = 0.05)
+  # Removes FSC-A and SSC-A
+  quantiles <- quantiles[, -(1:2)]
+  quantiles <- apply(quantiles, 2, median, na.rm = TRUE)
+  widths <- quantile2width(quantiles)
+
+  list(quantiles = quantiles, widths = widths)
+})
+quantiles <- do.call(rbind, lapply(widths_quantiles, "[[", "quantiles"))
+quantiles <- melt(quantiles)
+colnames(quantiles) <- c("Center", "Marker", "Quantile")
+
+widths <- do.call(rbind, lapply(widths_quantiles, "[[", "widths"))
+widths <- melt(widths)
+colnames(widths) <- c("Center", "Marker", "Width")
+
+if (plot) {
+  p <- ggplot(quantiles, aes(Marker, Quantile)) + geom_boxplot()
+  p + ylab("Center-specific Quantiles") + ggtitle("Median Negative Quantiles -- Lymphocytes")
+  p <- ggplot(widths, aes(Marker, Width)) + geom_boxplot()
+  p + ylab("Center-specific Widths") + ggtitle("Median Widths -- Lymphocytes")
+}
+
+# For the following centers/markers, we have discovered that aggregation of the
+# widths across all centers improves the transformations of the markers listed.
+# Baylor - CD27
+# NHLBI - CD27
+# UCLA - CD19, CD27
+# Yale - CD19, CD27, Live
+widths <- ddply(widths, .(Marker), transform, median_width = median(Width))
+widths$Marker <- as.character(widths$Marker)
+widths$Center <- as.character(widths$Center)
+
+improve_indices <- with(widths,
+                        (Marker == "CD27" & Center %in% c("Baylor", "NHLBI", "UCLA", "Yale")) |
+                        (Marker == "CD19" & Center %in% c("UCLA", "Yale")) |
+                        (Marker == "Live" & Center == "Yale"))
+widths <- within(widths, Width[improve_indices] <- median_width[improve_indices])
+
+# TODO: Problem markers that persist. Need to update these manually
+# NHLBI - CD27 (Subjective value previously was 0.8)
+# UCLA - CD27 (Much improved, but sample 4 has lots of zeros. Subjective value previously was 1.6)
+# UCLA - CD3 (Double-check this)
+# Yale - CD3 (Double-check this) - May be fixed by improved compensation
+# Yale - CD19 (Double-check this) - May be fixed by improved compensation
+# Yale - CD27 - May be fixed by improved compensation
+
+# Next, we apply the center-specific transformations to each marker.
+message("Applying transformations for each center...")
+for (center in names(fs_split)) {
+  message("Center: ", center)
+  widths_center <- subset(widths, Center == center)
+  widths_center$Marker <- as.character(widths_center$Marker)
+
+  for (i in seq_len(nrow(widths_center))) {
+    trans_marker <- with(widths_center, transformList(Marker[i], FCSTransTransform(w = Width[i])))
+    fs_split[[center]] <- transform(fs_split[[center]], trans_marker)
+  }
+}
+
+# Removes median widths from 'widths' to avoid confusion when transformations are saved.
+widths <- subset(widths, select = -median_width)
+
+# Saves transformations to a CSV file
+write.csv(widths, file = "data/bcell-transformations.csv", row.names = FALSE)
+
+# Merges the list of flowSet objects into a single flowSet object. This code is
+# verbose but it circumvents an issue introduced recently in flowIncubator.
+flow_set <- fs_split[[1]]
+for (i in seq_along(fs_split)[-1]) {
+  flow_set <- rbind2(flow_set, fs_split[[i]])
+}
+
+# Creates a new GatingSet
+gs_bcell <- GatingSet(flow_set)
+
+# TODO:
+# By creating a second GatingSet, we have removed the gates previously applied.
+# This conflicts with the GatingTemplate CSV file. These gates will be reapplied
+# and likely cause an issue. With this in mind, I have updated the CSV files
+# and removed the 3 gates. The CD3 gate's parent is 'root'. This needs to be
+# fixed.
+
 
 # Archives the results
 save_gs(gs_bcell, path = file.path(path_Lyoplate, "gating-sets/gs-bcell"))

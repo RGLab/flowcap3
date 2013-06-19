@@ -564,3 +564,8 @@ hexbin_transformations <- function(center, widths, marker_pairs) {
   
   hexbin_results
 }
+
+#' Converts a marker quantile to the FCSTrans width
+quantile2width <- function(quantile) {
+  abs(0.5 * (4.5 * log(10) - log(2^18 / abs(quantile))))
+}

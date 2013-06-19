@@ -1,0 +1,4 @@
+"alias","pop","parent","dims","method","args"
+"boundary","boundary","root","FSC-A,SSC-A","mindensity",""
+"nonDebris","nonDebris+","boundary","FSC-A","mindensity","gate_range=c(5e4,1e5),adjust=1.5"
+"lymph","lymph","nonDebris","FSC-A,SSC-A","flowClust","K=2,quantile=0.95,target=c(1e5,5e4)"
