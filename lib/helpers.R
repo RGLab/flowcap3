@@ -97,8 +97,8 @@ marker_conversion <- Vectorize(function(marker) {
     marker <- "Live"
   } else if (marker == "IGD") {
     marker <- "IgD"
-  } else if (marker %in% c("HLA", "HLADR")) {
-    marker <- "HLA-DR"
+  } else if (marker %in% c("HLA", "HLADR", "HLA-DR")) {
+    marker <- "HLADR"
   } else if (marker == "CD197") {
     marker <- "CCR7"
   } else if (marker == "CD194") {
@@ -107,7 +107,7 @@ marker_conversion <- Vectorize(function(marker) {
     marker <- "CD11c"
   } else if (marker %in% c("CD3CD19CD20", "CD3+19+20", "CD3_CD19_CD20",
                            "CD3+CD19+CD20+", "Lineage", "CD3+19+20")) {
-    marker <- "CD3+CD19+CD20"
+    marker <- "Lineage"
   } else if (marker == "CD196") {
     marker <- "CCR6"
   } else if (marker == "CD183") {
@@ -272,7 +272,8 @@ compensation_lyoplate <- function(path, xlsx, pregate = TRUE, plot = FALSE,
 #' @return a \code{flowSet} object
 flowset_lyoplate <- function(path, xlsx, comp_matrix,
                              transform = c("FCSTrans", "estimateLogicle"), center,
-                             panel = c("B cell", "T cell", "Treg", "DC/mono/NK", "Th1/2/17")) {
+                             panel = c("B cell", "T cell", "Treg", "DC/mono/NK", "Th1/2/17"),
+                             channels_remove = NULL) {
   panel <- match.arg(panel)
   transform <- match.arg(transform)
 
@@ -290,7 +291,13 @@ flowset_lyoplate <- function(path, xlsx, comp_matrix,
 
   # Reads in the FCS files for the specified panel
   fcs_files <- file.path(path, exp_samples$name)
-  exp_flowset <- read.flowSet(fcs_files)
+
+  if (!is.null(channels_remove)) {
+    channels_regexp <- paste0(channels_remove, collapse = "|")
+  } else {
+    channels_regexp <- NULL
+  }
+  exp_flowset <- read.flowSet(fcs_files, column.pattern = channels_regexp, invert = TRUE)
 
   # Updates the flowSet's pData
   exp_pdata <- pData(exp_flowset)
