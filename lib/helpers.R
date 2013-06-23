@@ -64,34 +64,8 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
     # In the case the marker name is given, we swap the marker and channel
     # names.
     if (!is.null(marker)) {
-      # If marker name contains additional info, remove everything after the
-      # space. (e.g., "IgD V500" to "IgD")
-      marker <- strsplit(marker, " ")[[1]][1]
-
-      # For the following list of marker names, we manually update the names so
-      # that they are standard across centers.
-      if (marker == "19") {
-        marker <- "CD19"
-      } else if (marker %in% c("LIVE", "LIVE_GREEN", "Live/Dead")) {
-        marker <- "Live"
-      } else if (marker == "IGD") {
-        marker <- "IgD"
-      } else if (marker %in% c("HLA", "HLADR")) {
-        marker <- "HLA-DR"
-      } else if (marker == "CD197") {
-        marker <- "CCR7"
-      } else if (marker == "CD194") {
-        marker <- "CCR4"
-      } else if (marker == "CD11C") {
-        marker <- "CD11c"
-      } else if (marker %in% c("CD3CD19CD20", "CD3+19+20", "CD3_CD19_CD20",
-                               "CD3+CD19+CD20+", "Lineage", "CD3+19+20")) {
-        marker <- "CD3+CD19+CD20"
-      } else if (marker == "CD196") {
-        marker <- "CCR6"
-      } else if (marker == "CD183") {
-        marker <- "CXCR3"
-      }
+      # Converts the marker names to a common name
+      marker <- marker_conversion(marker)
 
       # Updates the channel information in the flow_frame with the marker
       flow_frame@description[[channel_idx]] <- marker
@@ -107,6 +81,41 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
   # Subset to markers of interest
   flow_frame[, markers_keep]
 }
+
+#' Converts the Lyoplate marker names to a common name
+#'
+#' For the following list of marker names, we manually update the names so
+#' that they are standard across centers.
+marker_conversion <- Vectorize(function(marker) {
+  # If marker name contains additional info, remove everything after the
+  # space. (e.g., "IgD V500" to "IgD")
+  marker <- strsplit(marker, " ")[[1]][1]
+
+  if (marker == "19") {
+    marker <- "CD19"
+  } else if (marker %in% c("LIVE", "LIVE_GREEN", "Live/Dead")) {
+    marker <- "Live"
+  } else if (marker == "IGD") {
+    marker <- "IgD"
+  } else if (marker %in% c("HLA", "HLADR", "HLA-DR")) {
+    marker <- "HLADR"
+  } else if (marker == "CD197") {
+    marker <- "CCR7"
+  } else if (marker == "CD194") {
+    marker <- "CCR4"
+  } else if (marker == "CD11C") {
+    marker <- "CD11c"
+  } else if (marker %in% c("CD3CD19CD20", "CD3+19+20", "CD3_CD19_CD20",
+                           "CD3+CD19+CD20+", "Lineage", "CD3+19+20")) {
+    marker <- "Lineage"
+  } else if (marker == "CD196") {
+    marker <- "CCR6"
+  } else if (marker == "CD183") {
+    marker <- "CXCR3"
+  }
+
+  marker
+})
 
 
 #' Prettifies the table returned by population stats for the pipeline
@@ -150,7 +159,8 @@ pretty_popstats <- function(population_stats, nodes = 1) {
 #' @return the compensation matrix
 compensation_lyoplate <- function(path, xlsx, pregate = TRUE, plot = FALSE,
                                   method = c("mode", "median", "mean"),
-                                  plot_debris = FALSE, plot_markers = FALSE, ...) {
+                                  plot_debris = FALSE, plot_markers = FALSE,
+                                  plot_spillover = FALSE, ...) {
                                   
   method <- match.arg(method)
   
@@ -245,7 +255,7 @@ compensation_lyoplate <- function(path, xlsx, pregate = TRUE, plot = FALSE,
   spillover(comp_flowset, unstained = length(comp_flowset),
             patt = paste(comp_controls$Marker, collapse = "|"),
             useNormFilt = FALSE, method = method, stain_match = "regexpr",
-            pregate = TRUE, plot = FALSE)
+            pregate = TRUE, plot = plot_spillover)
 }
 
 #' Constructs a flowSet for the specified center for Lyoplate 3.0
@@ -259,12 +269,13 @@ compensation_lyoplate <- function(path, xlsx, pregate = TRUE, plot = FALSE,
 #' @param comp_matrix a compensation matrix
 #' @param center a character string denoting the current center
 #' @param panel the panel type
-#' @param min_limit the minimum limit to be passed to \code{read.flowSet}
 #' @return a \code{flowSet} object
-flowset_lyoplate <- function(path, xlsx, comp_matrix, transform = TRUE, center,
+flowset_lyoplate <- function(path, xlsx, comp_matrix,
+                             transform = c("FCSTrans", "estimateLogicle"), center,
                              panel = c("B cell", "T cell", "Treg", "DC/mono/NK", "Th1/2/17"),
-                             min_limit = -100) {
+                             channels_remove = NULL) {
   panel <- match.arg(panel)
+  transform <- match.arg(transform)
 
   exp_samples <- read.xlsx2(file = xlsx, sheetName = "Exp samples",
                             startRow = 3, stringsAsFactors = FALSE)
@@ -280,7 +291,13 @@ flowset_lyoplate <- function(path, xlsx, comp_matrix, transform = TRUE, center,
 
   # Reads in the FCS files for the specified panel
   fcs_files <- file.path(path, exp_samples$name)
-  exp_flowset <- read.flowSet(fcs_files, min.limit = min_limit)
+
+  if (!is.null(channels_remove)) {
+    channels_regexp <- paste0(channels_remove, collapse = "|")
+  } else {
+    channels_regexp <- NULL
+  }
+  exp_flowset <- read.flowSet(fcs_files, column.pattern = channels_regexp, invert = TRUE)
 
   # Updates the flowSet's pData
   exp_pdata <- pData(exp_flowset)
@@ -292,19 +309,31 @@ flowset_lyoplate <- function(path, xlsx, comp_matrix, transform = TRUE, center,
   varMetadata(phenoData(exp_flowset)) <- varM
 
   # Compensates and transforms flowSet for current center
+  if (is.null(comp_matrix)) {
+    comp_matrix <- keyword(exp_flowset[[1]])$SPILL
+  }
   exp_flowset <- compensate(exp_flowset, comp_matrix)
 
-  # Applies the FCStrans transformation to the experimental samples.
-  # The channels transformed correspond to the column names of the compensation
-  # matrix constructed from the compensation controls. However, note that
-  # FCStrans compensates the samples using the spillover matrix stored in the
-  # keywords.
-  if (transform){
-    trans <- transformList(from = colnames(comp_matrix), tfun = FCSTransTransform())
-    exp_flowset <- transform(exp_flowset, trans)
+  # Saves list of estimated FCSTrans widths
+  width_list <- list()
+
+  for (channel in colnames(comp_matrix)) {
+    # Based on Parks et al. (2006) in Cytometry A, we select "the fifth
+    # percentile of all events that are below zero as this reference value."
+    quantiles_channel <- fsApply(exp_flowset, function(flow_frame) {
+      quantile_negatives(exprs(flow_frame)[, channel], probs = 0.05, names = FALSE)
+    })
+    quantile_median <- median(quantiles_channel, na.rm = TRUE)
+    w_channel <- abs(0.5 * (4.5 * log(10) - log(2^18 / abs(quantile_median))))
+
+    width_list[[channel]] <- w_channel
   }
-  
-  exp_flowset
+
+  widths <- melt(width_list)
+  colnames(widths) <- c("width", "Channel")
+  widths$Center <- center
+
+  list(flow_set = exp_flowset, widths = widths)
 }
 
 ##################################################
@@ -446,7 +475,7 @@ marginal_gating_plot <- function(data, feature_pairs, bins = 30) {
 #' @param criterion the criterion to use for the automatic selection of \code{K}.
 #' By default, the \code{ICL} is used
 #' @param ... additional arguments passed to \code{flowClust}
-pregate_flowset <- function(flow_set, cells_kept = 0.7, K = 2:6, trans = 0,
+pregate_flowset <- function(flow_set, cells_kept = 0.8, K = 2:4, trans = 0,
                             nu.est = 2, criterion = c("ICL", "BIC"),
                             verbose = TRUE, plot = TRUE, ...) {
 
@@ -505,4 +534,60 @@ fill <- function(x,y=''){
     x[wh[i]:(wh[i+1]-1)] <- x[wh[i]]
   }
   x
+}
+
+quantile_negatives <- function(x, ...) {
+  x <- x[x < 0]
+  quantile(x, ...)
+}
+
+
+#' Creates hexbin objects of FCSTrans transformations for two markers of interest
+#' based on the transformations widths given
+hexbin_transformations <- function(center, widths, marker_pairs) {
+
+  temp_flowset <- fs_list[[center]]
+
+  first_markers <- unique(sapply(marker_pairs, head, n = 1))
+  second_markers <- unique(sapply(marker_pairs, tail, n = 1))
+
+  # Grabs channels for first and second markers
+  pData_flowset <- na.omit(pData(parameters(temp_flowset[[1]])))
+  pData_flowset$desc <- marker_conversion(pData_flowset$desc)
+  first_channels <- with(pData_flowset, name[match(first_markers, desc)])
+  second_channels <- with(pData_flowset, name[match(second_markers, desc)])
+  
+  # Transforms first_channels by widths[1]
+  trans_channel1 <- lapply(first_channels, function(channel) {
+    FCSTransTransform(w = widths[1])
+  })
+  trans_channel1 <- transformList(first_channels, trans_channel1)
+  temp_flowset <- transform(temp_flowset, trans_channel1)
+
+  # Transforms second_channels by widths[2]
+  trans_channel2 <- lapply(second_channels, function(channel) {
+    FCSTransTransform(w = widths[2])
+  })
+  trans_channel2 <- transformList(second_channels, trans_channel2)
+  temp_flowset <- transform(temp_flowset, trans_channel2)
+
+  # For each marker pair, creates hexbin for each sample within the flowSet
+  hexbin_results <- lapply(marker_pairs, function(marker_pair) {
+    channel_pair <- with(pData_flowset, name[match(marker_pair, desc)])
+
+    lapply(seq_along(temp_flowset), function(j) {
+      x <- exprs(temp_flowset[[j]])
+      x <- x[x[, "SSC-A"] > 0, ]
+      hexbin(x[, channel_pair])
+    })
+  })
+  # Naming convention, e.g., IgD_CD27
+  names(hexbin_results) <- sapply(marker_pairs, paste, collapse = "_")
+  
+  hexbin_results
+}
+
+#' Converts a marker quantile to the FCSTrans width
+quantile2width <- function(quantile) {
+  abs(0.5 * (4.5 * log(10) - log(2^18 / abs(quantile))))
 }

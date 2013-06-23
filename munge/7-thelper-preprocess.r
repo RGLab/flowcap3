@@ -1,7 +1,7 @@
 library(ProjectTemplate)
 load.project()
 
-panel <- "T cell"
+panel <- "Th1/2/17"
 path_Lyoplate <- "/loc/no-backup/ramey/Lyoplate"
 plot <- FALSE
 
@@ -12,17 +12,14 @@ plot <- FALSE
 centers <- list.dirs(path_Lyoplate, recursive = FALSE, full.names = FALSE)
 centers <- sapply(strsplit(centers, split = "/"), tail, n = 1)
 centers <- setdiff(centers, "gating-sets")
-# We have removed BSMS from all panels because they failed to include key markers
-# for many of the other panels.
+
+# Because BSMS apparently did not include CXCR3 in their FCS files, we
+# remove them from consideration for now.
 centers <- setdiff(centers, "BSMS")
 
-# TODO: Fix the issue with excess channels being in the CIMR FCS file
-# channels_remove = c("FSC-H", "FSC-W", "SSC-H", "SSC-W"))
-centers <- setdiff(centers, "CIMR")
-
 # These are the markers that we will keep after the data have been preprocessed.
-markers_of_interest <- c("FSC-A", "SSC-A", "Live", "CCR7", "CD4", "CD45RA",
-                         "CD3", "HLADR", "CD38", "CD8")
+markers_of_interest <- c("FSC-A", "SSC-A", "Live", "CXCR3", "CD4", "CCR6", "CD38",
+                         "CD8", "CD3", "HLADR")
 
 # For each center, we construct a flowSet of FCS files after compensating and
 # transforming the flowSet created from the FCS files in the center's
@@ -72,7 +69,7 @@ for (i in seq.int(2, length(lyoplate_list))) {
 # 1. Boundary on FSC-A and SSC-A
 # 2. Debris
 # 3. Lymphocytes
-gs_tcell <- GatingSet(flow_set)
+gs_thelper <- GatingSet(flow_set)
 
 # Creates the gating-template object from a CSV file
 gt_csv <- "gt-preprocess.csv"
@@ -81,15 +78,15 @@ gating_template <- gatingTemplate(gt_csv, panel)
 # Boundary gate
 boundary_gate <- rectangleGate(filterId = "boundary", "FSC-A" = c(0, 2.5e5),
                                "SSC-A" = c(0, 2.5e5))
-add(gs_tcell, boundary_gate)
-recompute(gs_tcell)
+add(gs_thelper, boundary_gate)
+recompute(gs_thelper)
 
 # Applies OpenCyto to GatingSet
-gating(gating_template, gs_tcell, mc.cores = 8, parallel_type = "multicore",
+gating(gating_template, gs_thelper, mc.cores = 8, parallel_type = "multicore",
        prior_group = "Center")
 
 # Next, we extract the flowSet the lymphocyte subpopulation
-fs_lymph <- getData(gs_tcell, "lymph")
+fs_lymph <- getData(gs_thelper, "lymph")
 
 # For each center, we compute the 5th percentile of each marker's negative values
 # These percentiles determine the center-specific transformation for each marker
@@ -135,7 +132,7 @@ for (center in names(fs_split)) {
 # widths <- subset(widths, select = -median_width)
 
 # Saves transformations to a CSV file
-write.csv(widths, file = "data/tcell-transformations.csv", row.names = FALSE)
+write.csv(widths, file = "data/thelper-transformations.csv", row.names = FALSE)
 
 # Merges the list of flowSet objects into a single flowSet object. This code is
 # verbose but it circumvents an issue introduced recently in flowIncubator.
@@ -145,7 +142,7 @@ for (i in seq_along(fs_split)[-1]) {
 }
 
 # Creates a new GatingSet
-gs_tcell <- GatingSet(flow_set)
+gs_thelper <- GatingSet(flow_set)
 
 # TODO:
 # By creating a second GatingSet, we have removed the gates previously applied.
@@ -156,5 +153,5 @@ gs_tcell <- GatingSet(flow_set)
 
 
 # Archives the results
-save_gs(gs_tcell, path = file.path(path_Lyoplate, "gating-sets/gs-tcell"))
+save_gs(gs_thelper, path = file.path(path_Lyoplate, "gating-sets/gs-thelper"))
 
