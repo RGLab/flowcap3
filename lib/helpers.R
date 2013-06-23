@@ -491,3 +491,18 @@ pregate_flowset <- function(flow_set, cells_kept = 0.7, K = 2:6, trans = 0,
     split(x = flow_frame, fc_out, population = list(clusters_kept))[[1]]
   })
 }
+
+
+##' Fill blank elements in intervals of a vector up to the next populated cells
+##'
+##' @name fill
+##' @title fill
+##' @export fill
+fill <- function(x,y=''){
+  wh <- which(!x%in%y)
+  wh <- c(wh,length(x)+1)
+  for(i in 1:((length(wh)-1))){
+    x[wh[i]:(wh[i+1]-1)] <- x[wh[i]]
+  }
+  x
+}
