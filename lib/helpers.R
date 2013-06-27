@@ -535,6 +535,7 @@ prepareManualTcellGates <- function(manual){
   Tcell <- manual
   colnames(Tcell)<-(gsub("\\n"," ",colnames(Tcell))) #remove newlines from column headers
   Tcell<-subset(Tcell,!File%in%c("mean","SD","CV")) # remove the estimates of the mean, CV and SD.
+  Tcell$File <- factor(Tcell$File)
 
                                         #What's in the remaining NA columns? The first column is "Center", the rest we can toss out.
   Tcell<-(Tcell[,-grep("NA",colnames(Tcell))[-1L]]) #drop irrelevant columns
@@ -548,11 +549,11 @@ prepareManualTcellGates <- function(manual){
   Tcell[,2] <- as.character(Tcell[,2])
   Tcell[is.na(Tcell[,2]),2] <- ""
   Tcell[,2] <- factor(fill(Tcell[,2]))
-
+  Tcell$Sample <- factor(as.numeric(as.character(factor(Tcell$Sample))))
                                         #Remove missing data from centers that were excluded
                                         #Tcell<-na.omit(Tcell)   #actually don't. We'll keep the excluded centers.
   Tcell <- rename(melt(Tcell,id=c("Sample","Center","File")),c(variable="population",value="proportion"))
-  Tcell$proportion <- as.numeric(as.character(Tcell$proportion))
+  Tcell$proportion <- as.numeric(as.character(Tcell$proportion))/100
   invisible(Tcell)
 }
 
@@ -573,9 +574,12 @@ prepareManualThelperGates <- function(manual){
   cn <- gsub("\\.1","\\.CD8",gsub("\\n","",cn))
   colnames(Thelper) <- cn
   Thelper$Center <- fill(Thelper$Center,NA)
+  Thelper <- subset(Thelper,!File%in%c("mean","SD","CV"))
+  Thelper$File <- factor(Thelper$File)
+  Thelper$Sample <- factor(Thelper$Sample)
   Thelper <- melt(Thelper,id=c("Sample","Center","File"))
   setnames(Thelper,c("variable","value"),c("population","proportion"))
-  Thelper$proportion <- as.numeric(as.character(Thelper$proportion))
+  Thelper$proportion <- as.numeric(as.character(Thelper$proportion))/100
   invisible(Thelper)
 }
 
@@ -601,9 +605,11 @@ prepareManualTregGates <- function(manual){
   Treg$Sample <- fill(Treg$Sample,NA)
   Treg$Center <- fill(Treg$Center,NA)
   Treg <- subset(Treg,!File%in%c("mean","SD","CV"))
+  Treg$File <- factor(Treg$File)
+  Treg$Sample <- factor(as.numeric(as.character(factor(Treg$Sample))))
   Treg <- melt(Treg,id=c("Sample","Center","File"))
   setnames(Treg,c("variable","value"),c("population","proportion"))
-  Treg$proportion <- as.numeric(as.character(Treg$proportion))
+  Treg$proportion <- as.numeric(as.character(Treg$proportion))/100
   invisible(Treg)
 }
 
@@ -626,6 +632,7 @@ prepareManualBcellGates <- function(manual){
   colnames(Bcell) <- gsub("\\n"," ",as.matrix(h2)) #Remove newlines from column names
   colnames(Bcell)[2] <- c("Center") #name the column which contains the center
   Bcell <- subset(Bcell,!File%in%c("mean","CV","SD")) #Drop the mean, SD and CV
+  Bcell$File <- factor(Bcell$File)
   tmp <- as.character(Bcell[,1]) #Fill in missing entries
   tmp[is.na(tmp)] <- ""
   Bcell[,1] <- factor(fill(tmp))
@@ -634,18 +641,19 @@ prepareManualBcellGates <- function(manual){
   Bcell[,2] <- factor(fill(tmp))
 
                                         #drop NA.3
-  Bcell <- Bcell[,-grep("NA.3",colnames(Bcell))]
+  Bcell <- Bcell[,-grep("NA\\.3",colnames(Bcell))]
                                         #NA.1 and NA.2 separate the populatoins that are parented by h1
                                         #prefix the populations with the appropriate parent name
   cur<-eval(as.call(c(`seq`,as.list(grep("NA",colnames(Bcell))+c(1,-1)))))
   colnames(Bcell)[cur] <- paste(h1[11],colnames(Bcell)[cur],sep="/")
   colnames(Bcell)[16:18] <- paste(h1[16],colnames(Bcell)[16:18],sep="/")
                                         #remove NA columns we don't need
-  Bcell <- Bcell[,-grep("NA",colnames(Bcell))];
+  Bcell <- Bcell[,-grep("NA",colnames(Bcell))]
   Bcell <- Bcell[,-4]
                                         # Bcell <- na.omit(Bcell) #Don't drop NA columns, we'll keep factors for the missing centers.
+  Bcell$factor <- factor(as.numeric(as.character(factor(Bcell$Sample))))
   Bcell <- rename(melt(Bcell,id=c("Sample","Center","File")),c(variable="population",value="proportion"))
-  Bcell$proportion <- as.numeric(as.character(Bcell$proportion))
+  Bcell$proportion <- as.numeric(as.character(Bcell$proportion))/100
   invisible(Bcell)
 }
 
@@ -747,8 +755,21 @@ Mono <- manual
                                         #Remove Mean, SD,CV
   Mono <- subset(Mono,!File%in%c("mean","SD","CV"))
   Mono$File <- factor(Mono$File)
+  Mono$Sample <- factor(as.numeric(as.character(factor(Mono$Sample))))
   Mono<-melt(Mono,id=c("Sample","Center","File"))
   setnames(Mono,c("variable","value"),c("population","proportion"))
-  Mono$proportion <- as.numeric(as.character(Mono$proportion))
+  Mono$proportion <- as.numeric(as.character(Mono$proportion))/100
   Mono
+}
+
+##' Returns the levels of a column for a list of data frames
+##'
+##' 
+##' @title get the levels of a specific column
+##' @param A list of data frames
+##' @param col name of the column 
+##' @return 
+##' @author Greg Finak
+getLevels <- function(A,col){
+  lapply(A,function(x)if(!is.null(x)){levels(get(col,x))})
 }
