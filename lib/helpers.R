@@ -521,6 +521,156 @@ pregate_flowset <- function(flow_set, cells_kept = 0.8, K = 2:4, trans = 0,
   })
 }
 
+##' Clean up the T-cell centralized manual gating table from Marc
+##'
+##' This function will read and clean up the manual gating table from Marc for the T-cells.
+##' Unfortunately all the panels are formatted differently and need to be handled separately.
+##' 
+##' @title prepareManualTcellGates
+##' @param manual A data.table of the manual gates for T-cells are passed in, as returned by read.xlsx with check.names=FALSE
+##' @return A data frame of just the T-cell statistics
+##' @author Greg Finak
+prepareManualTcellGates <- function(manual){
+                                        #Clean up column names for the T-cells
+  Tcell <- manual
+  colnames(Tcell)<-(gsub("\\n"," ",colnames(Tcell))) #remove newlines from column headers
+  Tcell<-subset(Tcell,!File%in%c("mean","SD","CV")) # remove the estimates of the mean, CV and SD.
+  Tcell$File <- factor(Tcell$File)
+
+                                        #What's in the remaining NA columns? The first column is "Center", the rest we can toss out.
+  Tcell<-(Tcell[,-grep("NA",colnames(Tcell))[-1L]]) #drop irrelevant columns
+  colnames(Tcell)[grep("NA",colnames(Tcell))] <- "Center" #Second column is center
+  colnames(Tcell) <- gsub("\\.([0-9])$","\\.CD8",colnames(Tcell)) # rename the populations that seem to have been calculated an alternate way (some other parent)
+  Tcell <- Tcell[-1L,] # drop the first row, it is empty
+
+                                        #Fill in blank rows for sample and center
+  Tcell[is.na(Tcell[,1]),1]<-""
+  Tcell[,1]<-factor(fill(Tcell[,1]))
+  Tcell[,2] <- as.character(Tcell[,2])
+  Tcell[is.na(Tcell[,2]),2] <- ""
+  Tcell[,2] <- factor(fill(Tcell[,2]))
+  Tcell$Sample <- factor(as.numeric(as.character(factor(Tcell$Sample))))
+                                        #Remove missing data from centers that were excluded
+                                        #Tcell<-na.omit(Tcell)   #actually don't. We'll keep the excluded centers.
+  Tcell <- rename(melt(Tcell,id=c("Sample","Center","File")),c(variable="population",value="proportion"))
+  Tcell$proportion <- as.numeric(as.character(Tcell$proportion))/100
+  invisible(Tcell)
+}
+
+##' Read the T-helper manual gates statistics
+##'
+##' Cleans up the data for comparisons
+##' @title prepareManualThelperGates
+##' @param manual 
+##' @return data.frame
+##' @author Greg Finak
+prepareManualThelperGates <- function(manual){
+  Thelper <- manual
+  Thelper <- Thelper[,-ncol(Thelper)]
+  Thelper <- Thelper[,apply(Thelper,2,function(x)!(all(is.na(x))))]
+  Thelper$Sample <- fill(Thelper$Sample,NA)
+  cn <- colnames(Thelper)
+  cn[2] <- "Center"
+  cn <- gsub("\\.1","\\.CD8",gsub("\\n","",cn))
+  colnames(Thelper) <- cn
+  Thelper$Center <- fill(Thelper$Center,NA)
+  Thelper <- subset(Thelper,!File%in%c("mean","SD","CV"))
+  Thelper$File <- factor(Thelper$File)
+  Thelper$Sample <- factor(Thelper$Sample)
+  Thelper <- melt(Thelper,id=c("Sample","Center","File"))
+  setnames(Thelper,c("variable","value"),c("population","proportion"))
+  Thelper$proportion <- as.numeric(as.character(Thelper$proportion))/100
+  invisible(Thelper)
+}
+
+##' Parse the manual gating statistics for Treg panel
+##'
+##' 
+##' @title prepareManualTregGates
+##' @param manual 
+##' @return data.frame
+##' @author Greg Finak
+prepareManualTregGates <- function(manual){
+  Treg <- manual
+                                        #Clean up the columns
+  cn <- colnames(Treg)
+  head <- Treg[1:2,]
+  cn <- fill(cn,"NA")
+  cn <- gsub(" $","",gsub("^ ","",gsub("\\n","",gsub("NA","",paste(cn,apply(head,2,function(x)paste(x,collapse=" ")))))))
+  Treg <- Treg[-c(1:2),]
+  colnames(Treg) <- cn
+  Treg <- Treg[,-ncol(Treg)]
+  colnames(Treg)[2] <- "Center"
+  Treg <- Treg[,!apply(Treg,2,function(x)all(is.na(x)))]
+  Treg$Sample <- fill(Treg$Sample,NA)
+  Treg$Center <- fill(Treg$Center,NA)
+  Treg <- subset(Treg,!File%in%c("mean","SD","CV"))
+  Treg$File <- factor(Treg$File)
+  Treg$Sample <- factor(as.numeric(as.character(factor(Treg$Sample))))
+  Treg <- melt(Treg,id=c("Sample","Center","File"))
+  setnames(Treg,c("variable","value"),c("population","proportion"))
+  Treg$proportion <- as.numeric(as.character(Treg$proportion))/100
+  invisible(Treg)
+}
+
+
+
+##' Clean up the B-cell gates
+##'
+##' Reads and cleans up the manual gates from Marc.
+##' @title prepareManualBcellGates
+##' @param manual a data.frame read in by read.xlsx with check.names=FALSE
+##' @return data.frame of the B-cell statistics.
+##' @author Greg Finak
+prepareManualBcellGates <- function(manual){
+  Bcell <- manual
+                                        #Parse rows one and two as a new header
+  h1 <- colnames(Bcell)
+  h2 <- Bcell[1,]
+
+  Bcell <- Bcell[-1L,]#Drop the first row, which  we have stored.
+  colnames(Bcell) <- gsub("\\n"," ",as.matrix(h2)) #Remove newlines from column names
+  colnames(Bcell)[2] <- c("Center") #name the column which contains the center
+  Bcell <- subset(Bcell,!File%in%c("mean","CV","SD")) #Drop the mean, SD and CV
+  Bcell$File <- factor(Bcell$File)
+  tmp <- as.character(Bcell[,1]) #Fill in missing entries
+  tmp[is.na(tmp)] <- ""
+  Bcell[,1] <- factor(fill(tmp))
+  tmp <- as.character(Bcell[,2])
+  tmp[is.na(tmp)] <- ""
+  Bcell[,2] <- factor(fill(tmp))
+
+                                        #drop NA.3
+  Bcell <- Bcell[,-grep("NA\\.3",colnames(Bcell))]
+                                        #NA.1 and NA.2 separate the populatoins that are parented by h1
+                                        #prefix the populations with the appropriate parent name
+  cur<-eval(as.call(c(`seq`,as.list(grep("NA",colnames(Bcell))+c(1,-1)))))
+  colnames(Bcell)[cur] <- paste(h1[11],colnames(Bcell)[cur],sep="/")
+  colnames(Bcell)[16:18] <- paste(h1[16],colnames(Bcell)[16:18],sep="/")
+                                        #remove NA columns we don't need
+  Bcell <- Bcell[,-grep("NA",colnames(Bcell))]
+  Bcell <- Bcell[,-4]
+                                        # Bcell <- na.omit(Bcell) #Don't drop NA columns, we'll keep factors for the missing centers.
+  Bcell$factor <- factor(as.numeric(as.character(factor(Bcell$Sample))))
+  Bcell <- rename(melt(Bcell,id=c("Sample","Center","File")),c(variable="population",value="proportion"))
+  Bcell$proportion <- as.numeric(as.character(Bcell$proportion))/100
+  invisible(Bcell)
+}
+
+##' Fill blank elements in intervals of a vector up to the next populated cells
+##'
+##' @name fill
+##' @title fill
+##' @export fill
+fill <- function(x,y=''){
+  wh <- which(!x%in%y)
+  wh <- c(wh,length(x)+1)
+  for(i in 1:((length(wh)-1))){
+    x[wh[i]:(wh[i+1]-1)] <- x[wh[i]]
+  }
+  x
+}
+
 quantile_negatives <- function(x, ...) {
   x <- x[x < 0]
   quantile(x, ...)
@@ -575,4 +725,51 @@ hexbin_transformations <- function(center, widths, marker_pairs) {
 #' Converts a marker quantile to the FCSTrans width
 quantile2width <- function(quantile) {
   abs(0.5 * (4.5 * log(10) - log(2^18 / abs(quantile))))
+}
+
+##'
+##' Reads the Monocyte Centralized gating, cleaning up the headers.
+##'
+##' 
+##' @title prepareManualMonocyteGates
+##' @param manual 
+##' @return A melted data frame with the monocyte stats 
+##' @author Greg Finak
+prepareManualMonocyteGates <- function(manual){
+Mono <- manual
+                                        #First three rows are header
+  cn<-colnames(Mono)
+                                        #clean up the header
+  head<-gsub(" $","",gsub("^ ","",gsub("\\n","",gsub("NA","",apply(Mono[1:3,],2,function(x)paste0(as.character(x),collapse=" "))))))
+  cn<-gsub(" $","",gsub("^ ","",paste(fill(gsub("NA","",names(head))),head,sep=" ")))
+  cn[2] <- "Center"
+  cn[cn==""] <- NA
+  Mono<-Mono[-c(1:3),]
+  colnames(Mono) <- cn
+                                        #Fill empy rows
+  Mono$File <- fill(Mono$File,NA)
+  Mono$Sample <- fill(Mono$Sample,NA)
+  Mono$Center <- fill(Mono$Center,NA)
+                                        #Drop NA columns
+  Mono<-Mono[,!(is.na(colnames(Mono))|c(rep(FALSE,length(cn)-1),TRUE))]
+                                        #Remove Mean, SD,CV
+  Mono <- subset(Mono,!File%in%c("mean","SD","CV"))
+  Mono$File <- factor(Mono$File)
+  Mono$Sample <- factor(as.numeric(as.character(factor(Mono$Sample))))
+  Mono<-melt(Mono,id=c("Sample","Center","File"))
+  setnames(Mono,c("variable","value"),c("population","proportion"))
+  Mono$proportion <- as.numeric(as.character(Mono$proportion))/100
+  Mono
+}
+
+##' Returns the levels of a column for a list of data frames
+##'
+##' 
+##' @title get the levels of a specific column
+##' @param A list of data frames
+##' @param col name of the column 
+##' @return 
+##' @author Greg Finak
+getLevels <- function(A,col){
+  lapply(A,function(x)if(!is.null(x)){levels(get(col,x))})
 }
