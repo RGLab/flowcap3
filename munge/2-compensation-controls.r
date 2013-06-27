@@ -19,7 +19,7 @@ compensation_matrices <- lapply(centers, function(center) {
   path <- file.path(path_Lyoplate, center)
 
   # The filename of the manually edited Excel file: assumed to be in getwd()
-  xlsx <- dir(pattern = center)
+  xlsx <- dir(path = "Excel-templates", pattern = center, full.names = TRUE)
   compensation_lyoplate(path = path, xlsx = xlsx, plot = FALSE, pregate = TRUE,
                         K = 4:5, cells_kept = 0.8, min = c(2e4, 5e4),
                         level = 0.9, plot_markers = FALSE, method = "median",

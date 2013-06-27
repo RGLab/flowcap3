@@ -30,7 +30,7 @@ lyoplate_list <- lapply(centers, function(center) {
   path <- file.path(path_Lyoplate, center)
 
   # The filename of the manually edited Excel file: assumed to be in getwd()
-  xlsx <- dir(pattern = center)
+  xlsx <- dir(path = "Excel-templates", pattern = center, full.names = TRUE)
 
   # Constructs a compensated flowSet object for the current center
   lyoplate_out <- flowset_lyoplate(path = path, xlsx = xlsx,
@@ -72,7 +72,7 @@ for (i in seq.int(2, length(lyoplate_list))) {
 gs_pregate <- GatingSet(flow_set)
 
 # Creates the gating-template object from a CSV file
-gt_csv <- "gt-preprocess.csv"
+gt_csv <- "gating-templates/gt-preprocess.csv"
 gating_template <- gatingTemplate(gt_csv, panel)
 
 # Boundary gate

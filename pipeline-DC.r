@@ -21,7 +21,7 @@ add(gs_DC, monocyte_gate, parent = "nonDebris")
 recompute(gs_DC)
 
 # Creates the gating-template object from a CSV file
-gt_csv <- "gt-DC.csv"
+gt_csv <- "gating-templates/gt-DC.csv"
 gating_template <- gatingTemplate(gt_csv, panel)
 
 # Applies OpenCyto to GatingSet

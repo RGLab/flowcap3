@@ -15,7 +15,7 @@ gs_path <- "/loc/no-backup/ramey/Lyoplate/gating-sets/gs-thelper"
 gs_thelper <- load_gs(gs_path)
 
 # Creates the gating-template object from a CSV file
-gt_csv <- "gt-thelper.csv"
+gt_csv <- "gating-templates/gt-thelper.csv"
 gating_template <- gatingTemplate(gt_csv, panel)
 
 # Applies OpenCyto to GatingSet
