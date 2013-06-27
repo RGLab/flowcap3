@@ -1,0 +1,14 @@
+"alias","pop","parent","dims","method","args"
+"boundary","boundary","root","FSC-A,SSC-A","mindensity",""
+"nonDebris","nonDebris+","boundary","FSC-A","mindensity","gate_range=c(5e4,1e5),adjust=1.5"
+"Monocytes","Monocytes","nonDebris","FSC-A,SSC-A","mindensity",""
+"Live","Live-","Monocytes","Live","cytokine","split='Center',tol=5e-3,num_peaks=2,ref_peak=2"
+"*","CD14+/-","Live","CD14","mindensity",
+"Lineage1","Lineage-","CD14-","Lineage","mindensity",
+"Lineage2","Lineage-","CD14+","Lineage","cytokine","split='Center',tol=5e-2"
+"CD14-Lineage-","CD14-Lineage-","Live","CD14,Lineage","refGate","CD14-:Lineage1"
+"CD14+Lineage-","CD14+Lineage-","Live","CD14,Lineage","refGate","CD14+:Lineage2"
+"CD14+CD16+","CD16+","CD14+Lineage-","CD16","cytokine","split='Center:Sample',tol=1e-2"
+"*","CD16+/-CD56+/-","CD14-Lineage-","CD16,CD56","flowClust","K=2"
+"HLADR+","HLADR+","CD16-CD56-","HLADR","flowClust","K=2"
+"*","CD11c+/-CD123+/-","HLADR+","CD11c,CD123","flowClust","K=2"

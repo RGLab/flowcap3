@@ -69,7 +69,7 @@ for (i in seq.int(2, length(lyoplate_list))) {
 # 1. Boundary on FSC-A and SSC-A
 # 2. Debris
 # 3. Lymphocytes
-gs_DC <- GatingSet(flow_set)
+gs_pregate <- GatingSet(flow_set)
 
 # Creates the gating-template object from a CSV file
 gt_csv <- "gt-preprocess.csv"
@@ -78,19 +78,15 @@ gating_template <- gatingTemplate(gt_csv, panel)
 # Boundary gate
 boundary_gate <- rectangleGate(filterId = "boundary", "FSC-A" = c(0, 2.5e5),
                                "SSC-A" = c(0, 2.5e5))
-add(gs_DC, boundary_gate)
-recompute(gs_DC)
+add(gs_pregate, boundary_gate)
+recompute(gs_pregate)
 
 # Applies OpenCyto to GatingSet
-gating(gating_template, gs_DC, mc.cores = 8, parallel_type = "multicore",
+gating(gating_template, gs_pregate, mc.cores = 8, parallel_type = "multicore",
        prior_group = "Center")
 
-# Note that the monocytes are kept for this panel. As such, we remove the
-# lymphocyte gate.
-Rm("lymph", gs_DC)
-
 # Next, we extract the flowSet after the debris have been removed
-fs_lymph <- getData(gs_DC, "nonDebris")
+fs_lymph <- getData(gs_pregate, "nonDebris")
 
 # For each center, we compute the 5th percentile of each marker's negative values
 # These percentiles determine the center-specific transformation for each marker
@@ -145,16 +141,17 @@ for (i in seq_along(fs_split)[-1]) {
   flow_set <- rbind2(flow_set, fs_split[[i]])
 }
 
-# Creates a new GatingSet
+# Creates a new GatingSet without the upstream gates. We copy those from the
+# previous gating set to the new GatingSet, which has the transformed data.
 gs_DC <- GatingSet(flow_set)
 
-# TODO:
-# By creating a second GatingSet, we have removed the gates previously applied.
-# This conflicts with the GatingTemplate CSV file. These gates will be reapplied
-# and likely cause an issue. With this in mind, I have updated the CSV files
-# and removed the 3 gates. The CD3 gate's parent is 'root'. This needs to be
-# fixed.
+boundary_gates <- getGate(gs_pregate, "boundary")
+add(gs_DC, boundary_gates)
+recompute(gs_DC)
 
+nonDebris_gates <- getGate(gs_pregate, "nonDebris")
+add(gs_DC, nonDebris_gates, parent = "boundary")
+recompute(gs_DC)
 
 # Archives the results
 save_gs(gs_DC, path = file.path(path_Lyoplate, "gating-sets/gs-DC"))

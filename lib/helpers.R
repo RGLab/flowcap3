@@ -106,7 +106,7 @@ marker_conversion <- Vectorize(function(marker) {
   } else if (marker == "CD11C") {
     marker <- "CD11c"
   } else if (marker %in% c("CD3CD19CD20", "CD3+19+20", "CD3_CD19_CD20",
-                           "CD3+CD19+CD20+", "Lineage", "CD3+19+20")) {
+                           "CD3+CD19+CD20+", "CD3+CD19+CD20", "CD3+19+20")) {
     marker <- "Lineage"
   } else if (marker == "CD196") {
     marker <- "CCR6"
