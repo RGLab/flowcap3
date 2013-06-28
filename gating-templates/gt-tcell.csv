@@ -3,7 +3,7 @@
 "nonDebris","nonDebris+","boundary","FSC-A","mindensity","gate_range=c(5e4,1e5),adjust=1.5"
 "lymph","lymph","nonDebris","FSC-A,SSC-A","flowClust","K=2,quantile=0.95,target=c(1e5,5e4)"
 "Live","Live-","lymph","Live","cytokine","split='Center',tol=5e-2"
-"CD3","CD3+","Live","CD3","mindensity",""
+"CD3","CD3+","Live","CD3","mindensity","gate_range=c(1000,2200)"
 "*","CD4+/-","CD3","CD4","mindensity",
 "CD8-","CD8-","CD3","CD8","mindensity",
 "CD8+","CD8+","CD4-","CD8","mindensity",
