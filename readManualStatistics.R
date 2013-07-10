@@ -25,15 +25,15 @@ names(OCGates) <- do.call(c,lapply(strsplit(basename(OpenCytoGateFiles),"-"),fun
 
 ## Import automated gates from flowDensity
 flowDensityGateFiles <- list.files(path="data/AutomatedGating/",pattern="Brinkman",full=TRUE)
-FDGates <- lapply(flowDensityGateFiles[c(1,3,4)],function(x)read.csv(x,check.names=FALSE))
-names(FDGates) <- do.call(c,lapply(strsplit(basename(flowDensityGateFiles[c(1,3,4)]),"-"),function(x)x[[2]]))
-FDGates[[4]] <- read.table(flowDensityGateFiles[[2]],sep="\t",header=TRUE)
-names(FDGates)[4] <- do.call(c,lapply(strsplit(basename(flowDensityGateFiles[c(2)]),"-"),function(x)x[[2]]))
+FDGates <- lapply(flowDensityGateFiles[c(1,3,4,5)],function(x)read.csv(x,check.names=FALSE))
+names(FDGates) <- do.call(c,lapply(strsplit(basename(flowDensityGateFiles[c(1,3,4,5)]),"-"),function(x)x[[2]]))
+FDGates[[5]] <- read.table(flowDensityGateFiles[[2]],sep="\t",header=TRUE)
+names(FDGates)[5] <- do.call(c,lapply(strsplit(basename(flowDensityGateFiles[c(2)]),"-"),function(x)x[[2]]))
 
 
 
 ## First, order the Panels for each Method
-FDGates <- FDGates[names(FDGates)[c(2,NA,1,4,3)]]
+FDGates <- FDGates[names(FDGates)[c(2,4,1,5,3)]]
 OCGates <- OCGates[names(OCGates)[c(3,5,1,2,4)]]
 CGates <- CGates[sheets]
 ## Standardize the panel names
@@ -205,12 +205,13 @@ Treg.OC.map <- as.list(pops[[selected,"OC"]])
 names(Treg.central.map) <- c("Lymphocytes","CD3","CD4","Lo127Hi25","Naive","Memory","Total Treg","Activated","remove","remove","remove","remove","remove","remove","remove")
 names(Treg.OC.map) <- c("Activated","remove","remove","remove","remove","remove","remove","remove","remove","Lo127Hi25","CD3","CD4","Lymphocytes","Memory","Naive","Total Treg")
 
+
 ## Remap Tregs
 CGates[[selected]]$Population <- mapvalues(CGates[[selected]]$Population,from=do.call(c,Treg.central.map),to=names(Treg.central.map))
 OCGates[[selected]]$Population <- mapvalues(OCGates[[selected]]$Population,from=do.call(c,Treg.OC.map),to=names(Treg.OC.map))
 ## Merge Tregs
 TREG <- subset(rbind(cbind(CGates[[selected]][,1:5],Method="Manual"),
-cbind(OCGates[[selected]][,1:5],Method="Automated")),!Population%in%"remove")
+cbind(OCGates[[selected]][,1:5],Method="OpenCyto")),!Population%in%"remove")
 
 
 ## Compute CV for TREGS
