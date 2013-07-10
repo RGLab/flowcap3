@@ -152,11 +152,10 @@ gs_path <- "/loc/no-backup/ramey/Lyoplate/gating-sets/gs-DC"
 gs_DC <- load_gs(gs_path)
 
 markers <- list(Monocytes = "Monocytes", Live = "Live", HLADR = "HLADR+",
-                CD14_Lineage = c("CD14-Lineage-", "CD4+Lineage-"), CD14_CD16 = "CD14+CD16+",
+                CD14_Lineage = c("CD14-Lineage-", "CD14+Lineage-"), CD14_CD16 = "CD14+CD16+",
                 CD16_CD56 = c("CD16+CD56+", "CD16+CD56-", "CD16-CD56+", "CD16-CD56-"),
                 CD11c_CD123 = c("CD11c+CD123+", "CD11c+CD123-", "CD11c-CD123+", "CD11c-CD123-"))
-                
-
+               
 for (marker_i in seq_along(markers)) {
   # Creates subfolder for plots
   marker_path <- file.path(plots_path, names(markers)[marker_i])
