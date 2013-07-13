@@ -6,7 +6,6 @@ set.seed(42)
 subpopulations <- c("lymph", "CD3", "CD19", "CD20", "IgD+CD27+", "IgD+CD27-",
                     "IgD-CD27+", "IgD-CD27-", "Plasmablasts", "Transitional")
 
-panel <- "Bcell"
 gs_path <- "/loc/no-backup/ramey/Lyoplate/gating-sets/gs-bcell"
 
 # Loads the archived gatingSet object

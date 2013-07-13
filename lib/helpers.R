@@ -52,11 +52,13 @@ preprocess_flowframe <- function(flow_frame, markers_keep) {
   if (missing(markers_keep)) {
     stop("The marker to keep must be specified.")
   }
+
+  fr_rownames <- rownames(parameters(flow_frame)@data)
   
   # Preprocesses each of the columns in the flow_frame
-  for(j in seq_len(ncol(flow_frame))) {
-    marker_idx <- paste0("$P", j, "S")
-    channel_idx <- paste0("$P", j, "N")
+  for (j in seq_len(ncol(flow_frame))) {
+    marker_idx <- paste0(fr_rownames[j], "S")
+    channel_idx <- paste0(fr_rownames[j], "N")
 
     marker <- flow_frame@description[[marker_idx]]
     channel <- flow_frame@description[[channel_idx]]
@@ -334,71 +336,6 @@ flowset_lyoplate <- function(path, xlsx, comp_matrix,
   widths$Center <- center
 
   list(flow_set = exp_flowset, widths = widths)
-}
-
-##################################################
-## B subpopulations
-## Gates IgD vs CD27
-##################################################
-gating.bsub <- function(gs_bcell, parent = "cd19 & cd20") {
-
-  parent_data <- getData(gs_bcell, parent)
-
-  xChannel <- "IgD"
-  yChannel <- "CD27"
-
-  prior_CD27 <- list(CD27 = openCyto:::prior_flowClust(parent_data, "CD27", nu0 = 30, min = 0.01))
-
-  fs_list <- split(parent_data, sampleNames(parent_data))
-
-  ## Apply the CD27 gate first.
-  cd27.filterList <- mclapply(fs_list, function(fs_sample) {
-    openCyto:::flowClust.1d(fs_sample, yChannel = yChannel, prior = prior_CD27, usePrior = "yes", nu = 30, min = 0.01)
-  }, mc.cores = 12)
-
-
-  # Then gate IgD on the cd27+
-  cd27_positive <- flowSet(lapply(sampleNames(parent_data), function(curSample) {
-    split(parent_data[[curSample]], cd27.filterList[[curSample]])[[1]]
-  }))
-  sampleNames(cd27_positive) <- sampleNames(parent_data)
-
-  # Here, we collapse all samples. Then, we take the prior of the negative
-  # population to be the largest peak after applying a lot of smoothing.
-  # Generally, there is only one visible peak anyways.
-  IgD_collapsed <- exprs(as(cd27_positive, "flowFrame"))[, xChannel]
-  IgD_negative_peak <- openCyto:::find_peaks(IgD_collapsed, adjust = 3)
-
-  # We use three components to model the IgD marker. We use two components for
-  # the negative peak and one component for the positive peak.
-  prior_IgD <- list()
-  huber_s <- huber(IgD_collapsed)$s
-  prior_IgD$Mu0 <- matrix(c(IgD_negative_peak - 3.5 * huber_s, IgD_negative_peak, IgD_negative_peak + 2.75 * huber_s), nrow = 3)
-  prior_IgD$Omega0 <- array(rep(0.05^2, 3), dim = c(3, 1, 1))
-  prior_IgD$Lambda0 <- array(rep(0.5^2, 3), dim = c(3, 1, 1))
-  prior_IgD$w0 <- rep(30, 3)
-  prior_IgD$nu0 <- rep(30, 3)
-
-  fs_list <- split(cd27_positive, sampleNames(cd27_positive))
-
-  IgD.filterList <- mclapply(fs_list, function(fs_sample) {
-    openCyto:::.flowClust.1d(fs_sample, yChannel = xChannel, prior = list(IgD = prior_IgD),
-                             usePrior = "yes", nu = 30, K = 3, cutpoint_method = "quantile", quantile = 0.95)
-  }, mc.cores = 10)
-
-  # construct quadGate afterwards
-  bsub.filterList <- sapply(names(IgD.filterList), function(curSample) {
-    xfilter <- IgD.filterList[[curSample]]
-    
-    # change from neg to pos for quadGate only recognize (xx,Inf)
-    yfilter <- cd27.filterList[[curSample]]
-    coord <- list(unname(xfilter@min), unname(yfilter@min))
-    names(coord) <- c(parameters(xfilter), parameters(yfilter))
-    quadGate(coord)
-  })
-
-  nodeID <- add(gs_bcell, filterList(bsub.filterList), parent = parent)
-  recompute(gs_bcell, nodeID)
 }
 
 # Code modified from:
