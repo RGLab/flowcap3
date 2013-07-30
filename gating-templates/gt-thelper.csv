@@ -1,9 +1,9 @@
 "alias","pop","parent","dims","method","args"
-"boundary","boundary","root","FSC-A,SSC-A","mindensity",""
+"boundary","boundary","root","FSC-A,SSC-A","boundary","max=c(2.5e5,2.5e5)"
 "nonDebris","nonDebris+","boundary","FSC-A","mindensity","gate_range=c(5e4,1e5),adjust=1.5"
 "lymph","lymph","nonDebris","FSC-A,SSC-A","flowClust","K=2,quantile=0.95,target=c(1e5,5e4)"
 "Live","Live-","lymph","Live","cytokine","split='Center',tol=5e-2"
-"CD3","CD3+","Live","CD3","mindensity",""
+"CD3","CD3+","Live","CD3","mindensity","gate_range=c(1000,2200)"
 "*","CD4+/-","CD3","CD4","mindensity",
 "CD8-","CD8-","CD3","CD8","mindensity",
 "CD8+","CD8+","CD4-","CD8","mindensity",
@@ -12,13 +12,13 @@
 "CD4_CD38","CD38+","CD4","CD38","flowClust","K=2"
 "CD4_HLADR","HLADR+","CD4","HLADR","cytokine","split='Center',tol=5e-2"
 "*","CD38+/-HLADR+/-","CD4","CD38,HLADR","refGate","CD4_CD38:CD4_HLADR"
-"CD4_CXCR3","CXCR3+","CD4","CXCR3","flowClust","K=5,neg=2"
+"CD4_CXCR3","CXCR3+","CD4","CXCR3","flowClust","K=2"
 "CD4_CCR6","CCR6+","CD4","CCR6","cytokine","split='Center',tol=5e-2"
 "*","CXCR3+/-CCR6+/-","CD4","CXCR3,CCR6","refGate","CD4_CXCR3:CD4_CCR6"
-"CD8_CD38","CD38+","CD8","CD38","cytokine","split='Center',tol=5e-2"
+"CD8_CD38","CD38+","CD8","CD38","cytokine","split='Center',tol=9.5e-2"
 "CD8_HLADR","HLADR+","CD8","HLADR","cytokine","split='Center',tol=1e-1"
 "*","CD38+/-HLADR+/-","CD8","CD38,HLADR","refGate","CD8_CD38:CD8_HLADR"
-"CD8_CXCR3","CXCR3+","CD8","CXCR3","cytokine","split='Center',tol=4e-2"
+"CD8_CXCR3","CXCR3+","CD8","CXCR3","flowClust","K=2"
 "CD8_CCR6","CCR6+","CD8","CCR6","cytokine","split='Center',tol=0.075"
 "*","CXCR3+/-CCR6+/-","CD8","CXCR3,CCR6","refGate","CD8_CXCR3:CD8_CCR6"
 

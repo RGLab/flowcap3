@@ -16,10 +16,10 @@ gs_treg <- load_gs(gs_path)
 
 # Creates the gating-template object from a CSV file
 gt_csv <- "gating-templates/gt-treg.csv"
-gating_template <- gatingTemplate(gt_csv, panel)
+gating_template <- gatingTemplate(gt_csv)
 
 # Applies OpenCyto to GatingSet
-gating(gating_template, gs_treg, mc.cores = 10, parallel_type = "multicore") #, prior_group = "Center")
+gating(gating_template, gs_treg, mc.cores = 6, parallel_type = "multicore") #, prior_group = "Center")
 
 # Archives the GatingSet
 save_gs(gs_treg, path = gs_path, overwrite = TRUE)

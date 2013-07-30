@@ -13,19 +13,11 @@ gs_path <- "/loc/no-backup/ramey/Lyoplate/gating-sets/gs-DC"
 # Loads the archived gatingSet object
 gs_DC <- load_gs(gs_path)
 
-# Adds crude Monocytes population based on manual analysis
-# Boundary gate
-monocyte_gate <- rectangleGate(filterId = "Monocytes", "FSC-A" = c(0, 2.5e5),
-                               "SSC-A" = c(0, 2.25e5))
-add(gs_DC, monocyte_gate, parent = "nonDebris")
-recompute(gs_DC)
-
 # Creates the gating-template object from a CSV file
 gt_csv <- "gating-templates/gt-DC.csv"
 gating_template <- gatingTemplate(gt_csv, panel)
 
 # Applies OpenCyto to GatingSet
-set.seed(42)
 gating(gating_template, gs_DC, mc.cores = 10, parallel_type = "multicore") #, prior_group = "Center")
 
 # Archives the GatingSet

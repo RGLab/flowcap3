@@ -58,6 +58,36 @@ for (i in seq.int(2, length(fs_list))) {
   flow_set <- rbind2(flow_set, fs_list[[i]])
 }
 
+# Updates pData to include Center, Sample, and Replicate
+# To do this, we open the Excel files provided for each center and extract the
+# relevant data.
+message("Extracting pData from Excel config files...")
+center_pData <- lapply(centers, function(center) {
+  message("Center: ", center)
+  
+  # The filename of the manually edited Excel file
+  xlsx <- dir(path = "Excel-templates", pattern = center, full.names = TRUE)
+  exp_samples <- read.xlsx2(file = xlsx, sheetName = "Exp samples", startRow = 3,
+                            stringsAsFactors = FALSE)
+  colnames(exp_samples) <- c("name", "Institution", "Panel", "Replicate",
+                             "Sample")
+  exp_samples <- subset(exp_samples, select = -c(Institution, Panel))
+  exp_samples$Replicate <- as.character(as.numeric(exp_samples$Replicate))
+  exp_samples$Sample <- as.character(as.numeric(exp_samples$Sample))
+  exp_samples$Center <- center
+  exp_samples
+})
+center_pData <- do.call(rbind, center_pData)
+center_pData <- subset(center_pData, select = c(name, Center, Sample, Replicate))
+
+message("Updating flowSet's pData...")
+center_pData <- merge(pData(flow_set), center_pData, sort = FALSE)
+rownames(center_pData) <- rownames(pData(flow_set))
+pData(flow_set) <- center_pData
+varM <- varMetadata(phenoData(flow_set))
+varM[-1,] <- rownames(varM)[-1]
+varMetadata(phenoData(flow_set)) <- varM
+
 # Creates GatingSet from the flowSet
 gs_treg <- GatingSet(flow_set)
 

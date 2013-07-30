@@ -9,7 +9,6 @@ subpopulations <- c("lymph", "CD3", "CD4", "CD8",
                     "CD4/CCR7+CD45RA+", "CD4/CCR7-CD45RA+", "CD4/CCR7+CD45RA-", "CD4/CCR7-CD45RA-",
                     "CD8/CCR7+CD45RA+", "CD8/CCR7-CD45RA+", "CD8/CCR7+CD45RA-", "CD8/CCR7-CD45RA-")
 
-panel <- "Tcell"
 gs_path <- "/loc/no-backup/ramey/Lyoplate/gating-sets/gs-tcell"
 
 # Loads the archived gatingSet object
@@ -17,10 +16,10 @@ gs_tcell <- load_gs(gs_path)
 
 # Creates the gating-template object from a CSV file
 gt_csv <- "gating-templates/gt-tcell.csv"
-gating_template <- gatingTemplate(gt_csv, panel)
+gating_template <- gatingTemplate(gt_csv)
 
 # Applies OpenCyto to GatingSet
-gating(gating_template, gs_tcell, mc.cores = 10, parallel_type = "multicore") #, prior_group = "Center")
+gating(gating_template, gs_tcell, mc.cores = 1, parallel_type = "multicore") #, prior_group = "Center")
 
 # Archives the GatingSet
 save_gs(gs_tcell, path = gs_path, overwrite = TRUE)

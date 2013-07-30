@@ -1,5 +1,5 @@
 "alias","pop","parent","dims","method","args"
-"boundary","boundary","root","FSC-A,SSC-A","mindensity",""
+"boundary","boundary","root","FSC-A,SSC-A","boundary","max=c(2.5e5,2.5e5)"
 "nonDebris","nonDebris+","boundary","FSC-A","mindensity","gate_range=c(5e4,1e5),adjust=1.5"
 "Monocytes","Monocytes","nonDebris","FSC-A,SSC-A","mindensity",""
 "Live","Live-","Monocytes","Live","cytokine","split='Center',tol=5e-3,num_peaks=2,ref_peak=2"

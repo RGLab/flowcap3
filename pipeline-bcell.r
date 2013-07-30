@@ -13,10 +13,10 @@ gs_bcell <- load_gs(gs_path)
 
 # Creates the gating-template object from a CSV file
 gt_csv <- "gating-templates/gt-bcell.csv"
-gating_template <- gatingTemplate(gt_csv, panel)
+gating_template <- gatingTemplate(gt_csv)
 
 # Applies OpenCyto to GatingSet
-gating(gating_template, gs_bcell, mc.cores = 12, parallel_type = "multicore")
+gating(gating_template, gs_bcell, mc.cores = 3, parallel_type = "multicore")
 
 # Archives the GatingSet
 save_gs(gs_bcell, path = gs_path, overwrite = TRUE)

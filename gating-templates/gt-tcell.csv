@@ -1,5 +1,5 @@
 "alias","pop","parent","dims","method","args"
-"boundary","boundary","root","FSC-A,SSC-A","mindensity",""
+"boundary","boundary","root","FSC-A,SSC-A","boundary","max=c(2.5e5,2.5e5)"
 "nonDebris","nonDebris+","boundary","FSC-A","mindensity","gate_range=c(5e4,1e5),adjust=1.5"
 "lymph","lymph","nonDebris","FSC-A,SSC-A","flowClust","K=2,quantile=0.95,target=c(1e5,5e4)"
 "Live","Live-","lymph","Live","cytokine","split='Center',tol=5e-2"
@@ -9,8 +9,8 @@
 "CD8+","CD8+","CD4-","CD8","mindensity",
 "CD4","CD4+CD8-","CD3","CD4,CD8","refGate","CD4+:CD8-"
 "CD8","CD4-CD8+","CD3","CD4,CD8","refGate","CD4-:CD8+"
-"CD8_CD38","CD38+","CD8","CD38","cytokine","split='Center',tol=9e-2"
-"CD8_HLADR","HLADR+","CD8","HLADR","cytokine","split='Center',tol=8e-2"
+"CD8_CD38","CD38+","CD8","CD38","cytokine","split='Center',tol=9.5e-2"
+"CD8_HLADR","HLADR+","CD8","HLADR","cytokine","split='Center',tol=9.5e-2"
 "CD38+HLADR+","CD38+HLADR+","CD8","CD38,HLADR","refGate","CD8_CD38:CD8_HLADR"
 "*","CCR7+/-CD45RA+/-","CD8","CCR7,CD45RA","flowClust","K=2"
 "CD4_CD38","CD38+","CD4","CD38","flowClust","K=2"
