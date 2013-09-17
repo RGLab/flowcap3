@@ -19,7 +19,20 @@ gt_csv <- "gating-templates/gt-tcell.csv"
 gating_template <- gatingTemplate(gt_csv)
 
 # Applies OpenCyto to GatingSet
-gating(gating_template, gs_tcell, mc.cores = 1, parallel_type = "multicore") #, prior_group = "Center")
+gating(gating_template, gs_tcell, mc.cores = 6, parallel_type = "multicore")
+
+# Hides intermediate helper gates
+setNode(gs_tcell, "boundary", FALSE)
+setNode(gs_tcell, "CD4+", FALSE)
+setNode(gs_tcell, "CD4-", FALSE)
+setNode(gs_tcell, "CD8+", FALSE)
+setNode(gs_tcell, "CD8-", FALSE)
+setNode(gs_tcell, "CD4_CCR7", FALSE)
+setNode(gs_tcell, "CD4_CD45RA", FALSE)
+setNode(gs_tcell, "CD4_CD38", FALSE)
+setNode(gs_tcell, "CD4_HLADR", FALSE)
+setNode(gs_tcell, "CD8_CD38", FALSE)
+setNode(gs_tcell, "CD8_HLADR", FALSE)
 
 # Archives the GatingSet
 save_gs(gs_tcell, path = gs_path, overwrite = TRUE)

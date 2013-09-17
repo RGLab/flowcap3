@@ -8,7 +8,6 @@ subpopulations <- c("lymph", "CD3", "CD4", "CD8",
                     "CD4/CXCR3+CCR6+", "CD4/CXCR3-CCR6+", "CD4/CXCR3+CCR6-", "CD4/CXCR3-CCR6-",
                     "CD8/CXCR3+CCR6+", "CD8/CXCR3-CCR6+", "CD8/CXCR3+CCR6-", "CD8/CXCR3-CCR6-")
 
-panel <- "Thelper"
 gs_path <- "/loc/no-backup/ramey/Lyoplate/gating-sets/gs-thelper"
 
 # Loads the archived gatingSet object
@@ -16,11 +15,26 @@ gs_thelper <- load_gs(gs_path)
 
 # Creates the gating-template object from a CSV file
 gt_csv <- "gating-templates/gt-thelper.csv"
-gating_template <- gatingTemplate(gt_csv, panel)
+gating_template <- gatingTemplate(gt_csv)
 
 # Applies OpenCyto to GatingSet
 set.seed(42)
-gating(gating_template, gs_thelper, mc.cores = 10, parallel_type = "multicore") #prior_group = "Center")
+gating(gating_template, gs_thelper, mc.cores = 10, parallel_type = "multicore")
+
+# Hides intermediate helper gates
+setNode(gs_thelper, "boundary", FALSE)
+setNode(gs_thelper, "CD4+", FALSE)
+setNode(gs_thelper, "CD4-", FALSE)
+setNode(gs_thelper, "CD8+", FALSE)
+setNode(gs_thelper, "CD8-", FALSE)
+setNode(gs_thelper, "CD4_CXCR3", FALSE)
+setNode(gs_thelper, "CD4_CCR6", FALSE)
+setNode(gs_thelper, "CD8_CXCR3", FALSE)
+setNode(gs_thelper, "CD8_CCR6", FALSE)
+setNode(gs_thelper, "CD4_CD38", FALSE)
+setNode(gs_thelper, "CD4_HLADR", FALSE)
+setNode(gs_thelper, "CD8_CD38", FALSE)
+setNode(gs_thelper, "CD8_HLADR", FALSE)
 
 # Archives the GatingSet
 save_gs(gs_thelper, path = gs_path, overwrite = TRUE)

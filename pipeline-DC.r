@@ -7,7 +7,6 @@ subpopulations <- c("Monocytes", "CD14-Lineage-", "CD4+Lineage-", "CD14+CD16+",
                     "CD16+CD56+", "CD16+CD56-", "CD16-CD56+", "CD16-CD56-", "HLADR+",
                     "CD11c+CD123+", "CD11c+CD123-", "CD11c-CD123+", "CD11c-CD123-")
 
-panel <- "DC"
 gs_path <- "/loc/no-backup/ramey/Lyoplate/gating-sets/gs-DC"
 
 # Loads the archived gatingSet object
@@ -15,10 +14,21 @@ gs_DC <- load_gs(gs_path)
 
 # Creates the gating-template object from a CSV file
 gt_csv <- "gating-templates/gt-DC.csv"
-gating_template <- gatingTemplate(gt_csv, panel)
+gating_template <- gatingTemplate(gt_csv)
 
 # Applies OpenCyto to GatingSet
-gating(gating_template, gs_DC, mc.cores = 10, parallel_type = "multicore") #, prior_group = "Center")
+gating(gating_template, gs_DC, mc.cores = 6, parallel_type = "multicore")
+
+# Hides intermediate helper gates
+setNode(gs_DC, "boundary", FALSE)
+setNode(gs_DC, "CD14+", FALSE)
+setNode(gs_DC, "CD14-", FALSE)
+setNode(gs_DC, "Lineage1", FALSE)
+setNode(gs_DC, "Lineage2", FALSE)
+setNode(gs_DC, "CD56+", FALSE)
+setNode(gs_DC, "CD123+", FALSE)
+setNode(gs_DC, "CD11c+", FALSE)
+setNode(gs_DC, "CD16+", FALSE)
 
 # Archives the GatingSet
 save_gs(gs_DC, path = gs_path, overwrite = TRUE)
