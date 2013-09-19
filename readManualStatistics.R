@@ -2,35 +2,37 @@ require(gdata)
 require(ProjectTemplate)
 require(data.table)
 load.project()
+require(reshape)
 sheets<-c("Tcell","Treg","Bcell","DCMonoNK","Thelper")
 sheetind<-1:5
-manual<-sapply(sheetind,function(sheetindex)xlsx::read.xlsx("data/To FlowCAP/CA c3 v2 ALL SITES.xlsx",sheetIndex=sheetindex,check.names=FALSE))
+manual<-sapply(sheetind,function(sheetindex)xlsx::read.xlsx("data/CA c3 v2 ALL SITES.xlsx",sheetIndex=sheetindex,check.names=FALSE))
 names(manual)<-sheets
 
-
- #Import and munge the manual gates.
- Tcell <- prepareManualTcellGates(manual[["Tcell"]])
- Bcell <- prepareManualBcellGates(manual[["Bcell"]])
- Mono <- prepareManualMonocyteGates(manual[["DCMonoNK"]])
- Treg <- prepareManualTregGates(manual[["Treg"]])
- Thelper <- prepareManualThelperGates(manual[["Thelper"]])
+# Import and munge the manual gates.
+Tcell <- prepareManualTcellGates(manual[["Tcell"]])
+Bcell <- prepareManualBcellGates(manual[["Bcell"]])
+Mono <- prepareManualMonocyteGates(manual[["DCMonoNK"]])
+Treg <- prepareManualTregGates(manual[["Treg"]])
+Thelper <- prepareManualThelperGates(manual[["Thelper"]])
 
 CGates <- list(Tcell=Tcell,Treg=Treg,Bcell=Bcell,DCMonoNK=Mono,Thelper=Thelper)
 
 ## Import automated gates from OpenCyto
 OpenCytoGateFiles <- list.files(path="data/AutomatedGating/",pattern="OpenCyto",full=TRUE)
 OCGates <- lapply(OpenCytoGateFiles,function(x)read.csv(x,check.names=FALSE))
-names(OCGates) <- do.call(c,lapply(strsplit(basename(OpenCytoGateFiles),"-"),function(x)gsub("\\.csv","",x[[3]])))
+names(OCGates) <- do.call(c,lapply(strsplit(basename(OpenCytoGateFiles),"-"),function(x)gsub("\\.csv","",x[[2]])))
 
 
 ## Import automated gates from flowDensity
 flowDensityGateFiles <- list.files(path="data/AutomatedGating/",pattern="Brinkman",full=TRUE)
-FDGates <- lapply(flowDensityGateFiles[c(1,3,4,5)],function(x)read.csv(x,check.names=FALSE))
-names(FDGates) <- do.call(c,lapply(strsplit(basename(flowDensityGateFiles[c(1,3,4,5)]),"-"),function(x)x[[2]]))
-FDGates[[5]] <- read.table(flowDensityGateFiles[[2]],sep="\t",header=TRUE)
-names(FDGates)[5] <- do.call(c,lapply(strsplit(basename(flowDensityGateFiles[c(2)]),"-"),function(x)x[[2]]))
-
-
+FDGates <- lapply(flowDensityGateFiles[c(1,3,4,5)], function(x) {
+  fd_gates <- read.csv(x, check.names = FALSE)
+  # Drop the first column from all FDGates tables. It is a row number, we don't need it.
+  fd_gates[, -1]
+})
+# The DC/Mono/NK results was saved in a different format from the other panels.
+FDGates[[5]] <- read.table(flowDensityGateFiles[[2]], sep = " ", header = TRUE, quote = "'")
+names(FDGates) <- c("Bcell", "Tcell", "Thelper", "Treg", "DCMonoNK")
 
 ## First, order the Panels for each Method
 FDGates <- FDGates[names(FDGates)[c(2,4,1,5,3)]]
@@ -41,13 +43,6 @@ names(FDGates) <- sheets
 names(OCGates) <- sheets
 names(CGates) <- sheets
 
-
-## What are the column names in each table?
-## Drop the first column from all FDGates tables. It is a row number, we don't need it.
-for(i in 1:length(FDGates)){
-  if(!is.null(FDGates[[i]]))
-    FDGates[[i]] <- FDGates[[i]][,-1L]
-}
 
 oldnames.FD <- lapply(FDGates,colnames)
 oldnames.OC <- lapply(OCGates,colnames)
@@ -263,6 +258,47 @@ Mono.central.map <- as.list(pops[[selected,"C"]])
 Mono.FD.map <- as.list(pops[[selected,"FD"]])
 Mono.OC.map <- as.list(pops[[selected,"OC"]])
 
+names(Mono.central.map) <- c("Monocytes", "CD14-Lineage+", "CD14+CD16+", "CD14+CD16-",
+                             "remove", "CD14-Lineage-", "CD16+CD56+", "CD16+CD56-", "HLADR+",
+                             "CD11c-CD123+", "CD11c+CD123-", "remove", "remove")
+
+# NOTE: The following are not included:
+# CD14-Lineage+
+# CD14+CD16-
+names(Mono.FD.map) <- c("remove", "remove", "CD11c-CD123+", "CD11c+CD123-", "remove",
+                        "CD14-Lineage-", "CD14+CD16+", "remove", "remove", "CD16+CD56-",
+                        "CD16+CD56+", "HLADR+", "remove", "remove", "Monocytes")
+
+
+# NOTE: The following are not included:
+# Monocytes
+# CD14+CD16-
+names(Mono.OC.map) <- c("remove", "CD11c-CD123+", "CD11c+CD123-", "remove",
+                        "CD14-Lineage-", "CD14+CD16+", "remove", "remove", "remove",
+                        "CD16+CD56-", "CD16+CD56+", "HLADR+")
+
+# Remap Monos
+CGates[[selected]]$Population <-mapvalues(CGates[[selected]]$Population,from=do.call(c,Mono.central.map),to=names(Mono.central.map))
+FDGates[[selected]]$Population <-
+  mapvalues(FDGates[[selected]]$Population,from=do.call(c,Mono.FD.map),to=names(Mono.FD.map))
+OCGates[[selected]]$Population <-
+  mapvalues(OCGates[[selected]]$Population,from=do.call(c,Mono.OC.map),to=names(Mono.OC.map))
+
+
+## Merge the DC/Mono/NK data
+DC_MONO <- subset(rbind(cbind(CGates[[selected]][,1:5],Method="Manual"),
+                       cbind(FDGates[[selected]][,1:5],Method="flowDensity"),
+                 cbind(OCGates[[selected]][,1:5],Method="OpenCyto")),!Population%in%"remove")
+
+## Compute the CV for each sample and method and choose the best automated method
+DC_MONO.CV <- ddply(DC_MONO,.(Sample,Method,Population),summarize,CV=sd(Proportion,na.rm=TRUE)/mean(Proportion,na.rm=TRUE))
+DC_MONO.CV <- melt(ddply(cast(DC_MONO.CV,value="CV",id=c("Sample","Population","Method"),Sample+Population~Method),.(Sample,Population),transform,Automated=min(flowDensity,OpenCyto)))
+setnames(DC_MONO.CV,c("variable","value"),c("Method","CV"))
+
+pdf("Comparison/DC_MONO.pdf",width=15,height=5)
+ggplot(subset(DC_MONO.CV,!(Population%in%"Monocytes")&Method%in%c("Manual","Automated")))+geom_bar(aes(y=CV,x=Method,fill=Method),stat="identity")+facet_grid(Sample~Population)+theme(axis.text.x=element_text(angle=90,hjust=1),strip.text.x=element_text(size=8))
+dev.off()
+
 
 ## Thelper
 selected <- "Thelper"
@@ -303,4 +339,4 @@ pdf("Comparison/THELPER.pdf",width=15,height=5)
 ggplot(subset(THELPER.CV,!(Population%in%"Lymphocytes")&!(Method%in%"Automated")))+geom_bar(aes(y=CV,x=Method,fill=Method),stat="identity")+facet_grid(Sample~Population)+theme(axis.text.x=element_text(angle=90,hjust=1),strip.text.x=element_text(size=8))
 dev.off()
 
-save("THELPER","TCELLS","BCELL","TREG",file="data/MergedTables.rda")
+save("THELPER", "TCELLS", "BCELL", "TREG", "DC_MONO", file = "data/MergedTables.rda")

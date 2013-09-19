@@ -3,7 +3,7 @@ load.project()
 set.seed(42)
 
 # Cellular subpopulations of interest
-subpopulations <- c("Monocytes", "CD14-Lineage-", "CD4+Lineage-", "CD14+CD16+",
+subpopulations <- c("Monocytes", "CD14-Lineage-", "CD14+Lineage-", "CD14+CD16+", "CD14+CD16-",
                     "CD16+CD56+", "CD16+CD56-", "CD16-CD56+", "CD16-CD56-", "HLADR+",
                     "CD11c+CD123+", "CD11c+CD123-", "CD11c-CD123+", "CD11c-CD123-")
 
