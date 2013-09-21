@@ -1,0 +1,110 @@
+Comparison of Centralized Manual and Automated Gating Methods
+========================================================
+
+* We compare OpenCyto and flowDensity against centralized manual gating for the SeraCare Lyoplate samples on five staining panels.  
+
+```{r load_libraries,echo=FALSE}
+suppressPackageStartupMessages({
+  require(tools);
+  require(data.table)
+  require(reshape)
+  require(knitr)
+  require(lme4)
+  require(car)
+  require(ggplot2)
+  require(languageR)
+                               })
+```
+
+```{r add_javascript}
+options(markdown.HTML.header = unlist(
+  sapply(system.file('misc', c('vignette.css', 'datatables.txt'), package = 'knitr'), readLines)
+  )
+)
+```
+
+```{r load_data,echo=FALSE,cache=TRUE,cache.extra=md5sum("../../data/MergedTables.rda")}
+load("../../data/MergedTables.rda")
+```
+ 
+## B-cell panel
+
+```{r bcell_cleanup,echo=2}
+  BCELL <- data.table(BCELL)
+  summary(BCELL)
+```
+
+* We see that the manual method has more rows and there are some `NAs` in the data
+
+```{r bcell_inspect}
+  unique(BCELL[is.na(Proportion),list(Center,File,Method)])
+  unique(BCELL[Proportion>1,list(Center,Population,Method)])
+```
+
+* The `NAs` come from Yale, and the file is not defined. This seems to be some missing data.
+* There are "proportions" greater than 1 for a population that is NA as well. 
+* We'll remove these and see if the rest is complete
+
+```{r bcell_removeNA,echo=FALSE,message=FALSE,results='asis'}
+  BCELL <- na.omit(BCELL)
+  m<-melt(BCELL,id=c("Sample","Center","Population","Method"),measure="Proportion")
+  kable(cast(m,Method~Population),format='html',table.attr='id="bcell_balance"')
+```
+<br>
+* Okay, now things look nicely balanced. We check if the range of the data makes sense for proportions. 
+
+
+`range(m$value)=[``r range(m$value)``]`
+
+* That looks as expected. We're good to go.
+
+<script type="text/javascript" charset="utf-8">
+  $(document).ready(function() {
+    $('#bcell_balance').dataTable();
+	} );
+</script>
+
+* The last thing we need to do is annotation the samples with a technical replicate id.
+
+```{r bcell_techrep_annotate}
+  BCELL[,Replicate:=gl(nrow(.SD),1),list(Sample,Center,Population,Method)]
+```
+
+
+## ANOVA for the B-cell panel
+
+We want to model variability between centers, between subjects, and contrast gating methods for each cell population.
+
+```{r bcell_boxplot,fig.width=5,fig.height=5,fig.cap="Boxplots of log proportions for each center and cell population by subject and gating method.",cache=TRUE,dpi=300}
+  df<-cast(BCELL,Sample+Center+Method~Population+Replicate,value="Proportion")
+  BCELL <- BCELL[,lp:=logit(Proportion)]
+  BCELL <- BCELL[,logp:=log(Proportion)]
+  pops <- levels(BCELL$Population)
+  setkey(BCELL,Population)
+  ggplot(BCELL[pops[c(3,5,8)]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))
+```
+
+How we'll model this is the following. We'll have fixed effects for gating methods, cell populations and their interactions. That is becausewe want to esimate the effec of each gating method on each population.
+
+We'll have a random intercept for Sample as well as a random term for cell population within each level of Centers:Subjects. The reasoning is that each subject at each center will have some random variation in the cell population proportion caused by technical bias and biological variability donor to donor.  A global shift alone is not expected to account for this variation (and indeed it doesn't), and while we would like to estimate the random population effect for Center and Sample separately, the model is over-specified in that case, and so we fit it for the interaction of Center and Sample.
+
+We fit the reponse (proportions) on the logit scale.
+
+```{r bcell_anova,cache=TRUE}
+#Estimate fixed effects for population and method and their interaction
+#random effects for center and sample, as well as random slope for population within center.
+  mer<-lmer(lp~Population*Method+(Population-1|Center:Sample)+(1|Sample),BCELL[Population!="Lymphocytes"])
+  mer2<-lmer(lp~Population*Method+(1|Center)+(1|Sample),BCELL[Population!="Lymphocytes"])
+
+#which model fits better? From Pinhero and Bates.
+  2*pchisq(2*as.numeric(logLik(mer)-logLik(mer2)), 2, lower.tail=FALSE)
+#Intercepts alone don't fit as well.
+
+  ggplot(data.frame(fit=(fitted(mer)),BCELL[Population!="Lymphocytes",],res=resid(mer),pg=BCELL[Population!="Lymphocytes",Method:Population]))+geom_boxplot(aes(x=pg,y=fit,fill=Center))+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("fitted")+scale_x_discrete("Population:Gating Method")+scale_fill_discrete("Method")+ggtitle("Fitted Values (logit proportions) vs Method and Cell Population")+facet_wrap(~Sample,ncol=1)
+
+  ggplot(data.frame(fit=fitted(mer),BCELL[Population!="Lymphocytes",],res=resid(mer),pg=BCELL[Population!="Lymphocytes",Method:Population]))+geom_boxplot(aes(x=pg,y=res,fill=Center))+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("residuals")+scale_x_discrete("Population:Gating Method")+scale_fill_discrete("Method")+ggtitle("Residuals vs Method and Cell Population")+facet_wrap(~Sample,ncol=1)
+  
+  ggplot(data.frame(fit=fitted(mer),BCELL[Population!="Lymphocytes",],res=resid(mer),pg=BCELL[Population!="Lymphocytes",Method:Population]))+geom_point(aes(x=fit,y=res))+ggtitle("Residuals vs Fitted")
+
+  ggplot(data.frame(fit=fitted(mer),BCELL[Population!="Lymphocytes",],res=resid(mer),pg=BCELL[Population!="Lymphocytes",Method:Population]))+geom_point(aes(x=Proportion,y=plogis(fit),col=Method))+ggtitle("Fitted vs Observed Proportions")+facet_grid(Center~Sample,scale="free")+geom_abline(aes(0,1),lty=2)+theme_bw()
+```
