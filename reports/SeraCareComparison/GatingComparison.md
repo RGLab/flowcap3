@@ -177,9 +177,11 @@ BCELL[, `:=`(Replicate, gl(nrow(.SD), 1)), list(Sample, Center, Population,
 
 
 
-## ANOVA for the B-cell panel
+## Mixed effects model for the B-cell panel
 
 We want to model variability between centers, between subjects, and contrast gating methods for each cell population.
+
+### Raw data
 
 
 ```r
@@ -197,7 +199,7 @@ pops <- levels(BCELL$Population)
 setkey(BCELL, Population)
 ggplot(BCELL[pops[c(3, 5, 8)]]) + geom_boxplot(aes(y = Proportion, x = Center, 
     fill = Method)) + facet_grid(Population ~ Sample, scales = "free") + theme(axis.text.x = element_text(angle = 45, 
-    hjust = 1))
+    hjust = 1)) + ggtitle("Raw B-cell data")
 ```
 
 ![Boxplots of log proportions for each center and cell population by subject and gating method.](figure/bcell_boxplot.png) 
@@ -205,70 +207,42 @@ ggplot(BCELL[pops[c(3, 5, 8)]]) + geom_boxplot(aes(y = Proportion, x = Center,
 
 How we'll model this is the following. We'll have fixed effects for gating methods, cell populations and their interactions. That is becausewe want to esimate the effec of each gating method on each population.
 
-We'll have a random intercept for Sample as well as a random term for cell population within each level of Centers:Subjects. The reasoning is that each subject at each center will have some random variation in the cell population proportion caused by technical bias and biological variability donor to donor.  A global shift alone is not expected to account for this variation (and indeed it doesn't), and while we would like to estimate the random population effect for Center and Sample separately, the model is over-specified in that case, and so we fit it for the interaction of Center and Sample.
+We fit a random intercept for Sample and Center as well as for each level of Population:Center and Population:Sample. The idea here is that cell population estimates will vary from center to center and from sample to sample, by more than just a fixed offset. 
 
 We fit the reponse (proportions) on the logit scale.
 
 
 ```r
 # Estimate fixed effects for population and method and their interaction
-# random effects for center and sample, as well as random slope for
-# population within center.
-mer <- lmer(lp ~ Population * Method + (Population - 1 | Center:Sample) + (1 | 
-    Sample), BCELL[Population != "Lymphocytes"])
-mer2 <- lmer(lp ~ Population * Method + (1 | Center) + (1 | Sample), BCELL[Population != 
-    "Lymphocytes"])
-
-# which model fits better? From Pinhero and Bates.
-2 * pchisq(2 * as.numeric(logLik(mer) - logLik(mer2)), 2, lower.tail = FALSE)
+# Random effects for center and sample, as random intercept for each
+# population:center and population:Sample
+mer <- lmer(lp ~ Population * Method + (1 | Center/Population) + (1 | Sample/Population), 
+    BCELL[Population != "Lymphocytes"], REML = FALSE, verbose = FALSE)
 ```
 
-```
-## [1] 5.168e-225
-```
 
-```r
-# Intercepts alone don't fit as well.
+### Model fits and residuals
 
-ggplot(data.frame(fit = (fitted(mer)), BCELL[Population != "Lymphocytes", ], 
-    res = resid(mer), pg = BCELL[Population != "Lymphocytes", Method:Population])) + 
-    geom_boxplot(aes(x = pg, y = fit, fill = Center)) + theme(axis.text.x = element_text(angle = 90, 
-    hjust = 1)) + scale_y_continuous("fitted") + scale_x_discrete("Population:Gating Method") + 
-    scale_fill_discrete("Method") + ggtitle("Fitted Values (logit proportions) vs Method and Cell Population") + 
-    facet_wrap(~Sample, ncol = 1)
-```
 
-![plot of chunk bcell_anova](figure/bcell_anova1.png) 
+![plot of chunk bcell_summarize_fitted](figure/bcell_summarize_fitted.png) 
 
-```r
 
-ggplot(data.frame(fit = fitted(mer), BCELL[Population != "Lymphocytes", ], res = resid(mer), 
-    pg = BCELL[Population != "Lymphocytes", Method:Population])) + geom_boxplot(aes(x = pg, 
-    y = res, fill = Center)) + theme(axis.text.x = element_text(angle = 90, 
-    hjust = 1)) + scale_y_continuous("residuals") + scale_x_discrete("Population:Gating Method") + 
-    scale_fill_discrete("Method") + ggtitle("Residuals vs Method and Cell Population") + 
-    facet_wrap(~Sample, ncol = 1)
-```
+![plot of chunk bcell_summarize_residuals](figure/bcell_summarize_residuals1.png) ![plot of chunk bcell_summarize_residuals](figure/bcell_summarize_residuals2.png) ![plot of chunk bcell_summarize_residuals](figure/bcell_summarize_residuals3.png) 
 
-![plot of chunk bcell_anova](figure/bcell_anova2.png) 
 
-```r
+### Bias
 
-ggplot(data.frame(fit = fitted(mer), BCELL[Population != "Lymphocytes", ], res = resid(mer), 
-    pg = BCELL[Population != "Lymphocytes", Method:Population])) + geom_point(aes(x = fit, 
-    y = res)) + ggtitle("Residuals vs Fitted")
-```
+![plot of chunk bcell_bias](figure/bcell_bias.png) 
 
-![plot of chunk bcell_anova](figure/bcell_anova3.png) 
 
-```r
+### Variability
 
-ggplot(data.frame(fit = fitted(mer), BCELL[Population != "Lymphocytes", ], res = resid(mer), 
-    pg = BCELL[Population != "Lymphocytes", Method:Population])) + geom_point(aes(x = Proportion, 
-    y = plogis(fit), col = Method)) + ggtitle("Fitted vs Observed Proportions") + 
-    facet_grid(Center ~ Sample, scale = "free") + geom_abline(aes(0, 1), lty = 2) + 
-    theme_bw()
-```
+![plot of chunk bcell_variance_components](figure/bcell_variance_components.png) 
 
-![plot of chunk bcell_anova](figure/bcell_anova4.png) 
 
+## Summary of B-cell Panel
+
+We note several things: 
+*  First, OpenCyto is slightly biased for the Plasmablast cell population. IT tends to overestimate it compared to the centralized manual gates.
+* Second, most of the variability is sample-to-sample biological variability, followed by residual within-sample variation, and then center-to-center variation. 
+* The most variable populations are the plasmablasts and the IgD+ subsets.

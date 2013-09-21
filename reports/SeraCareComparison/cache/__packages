@@ -3,6 +3,7 @@ car
 data.table
 GGally
 ggplot2
+Kmisc
 knitr
 languageR
 lattice
@@ -11,4 +12,6 @@ MASS
 Matrix
 nnet
 plyr
+Rcpp
 reshape
+scales

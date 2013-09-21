@@ -13,6 +13,7 @@ suppressPackageStartupMessages({
   require(car)
   require(ggplot2)
   require(languageR)
+  require(Kmisc)
                                })
 ```
 
@@ -71,40 +72,80 @@ load("../../data/MergedTables.rda")
 ```
 
 
-## ANOVA for the B-cell panel
+## Mixed effects model for the B-cell panel
 
 We want to model variability between centers, between subjects, and contrast gating methods for each cell population.
 
-```{r bcell_boxplot,fig.width=5,fig.height=5,fig.cap="Boxplots of log proportions for each center and cell population by subject and gating method.",cache=TRUE,dpi=300}
+### Raw data
+
+```{r bcell_boxplot,fig.width=10,fig.height=5,fig.cap="Boxplots of log proportions for each center and cell population by subject and gating method.",cache=TRUE,dpi=300}
   df<-cast(BCELL,Sample+Center+Method~Population+Replicate,value="Proportion")
   BCELL <- BCELL[,lp:=logit(Proportion)]
   BCELL <- BCELL[,logp:=log(Proportion)]
   pops <- levels(BCELL$Population)
   setkey(BCELL,Population)
-  ggplot(BCELL[pops[c(3,5,8)]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))
+  ggplot(BCELL[pops[c(3,5,8)]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))+ggtitle("Raw B-cell data")
 ```
 
 How we'll model this is the following. We'll have fixed effects for gating methods, cell populations and their interactions. That is becausewe want to esimate the effec of each gating method on each population.
 
-We'll have a random intercept for Sample as well as a random term for cell population within each level of Centers:Subjects. The reasoning is that each subject at each center will have some random variation in the cell population proportion caused by technical bias and biological variability donor to donor.  A global shift alone is not expected to account for this variation (and indeed it doesn't), and while we would like to estimate the random population effect for Center and Sample separately, the model is over-specified in that case, and so we fit it for the interaction of Center and Sample.
+We fit a random intercept for Sample and Center as well as for each level of Population:Center and Population:Sample. The idea here is that cell population estimates will vary from center to center and from sample to sample, by more than just a fixed offset. 
 
 We fit the reponse (proportions) on the logit scale.
 
 ```{r bcell_anova,cache=TRUE}
 #Estimate fixed effects for population and method and their interaction
-#random effects for center and sample, as well as random slope for population within center.
-  mer<-lmer(lp~Population*Method+(Population-1|Center:Sample)+(1|Sample),BCELL[Population!="Lymphocytes"])
-  mer2<-lmer(lp~Population*Method+(1|Center)+(1|Sample),BCELL[Population!="Lymphocytes"])
-
-#which model fits better? From Pinhero and Bates.
-  2*pchisq(2*as.numeric(logLik(mer)-logLik(mer2)), 2, lower.tail=FALSE)
-#Intercepts alone don't fit as well.
-
-  ggplot(data.frame(fit=(fitted(mer)),BCELL[Population!="Lymphocytes",],res=resid(mer),pg=BCELL[Population!="Lymphocytes",Method:Population]))+geom_boxplot(aes(x=pg,y=fit,fill=Center))+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("fitted")+scale_x_discrete("Population:Gating Method")+scale_fill_discrete("Method")+ggtitle("Fitted Values (logit proportions) vs Method and Cell Population")+facet_wrap(~Sample,ncol=1)
-
-  ggplot(data.frame(fit=fitted(mer),BCELL[Population!="Lymphocytes",],res=resid(mer),pg=BCELL[Population!="Lymphocytes",Method:Population]))+geom_boxplot(aes(x=pg,y=res,fill=Center))+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("residuals")+scale_x_discrete("Population:Gating Method")+scale_fill_discrete("Method")+ggtitle("Residuals vs Method and Cell Population")+facet_wrap(~Sample,ncol=1)
-  
-  ggplot(data.frame(fit=fitted(mer),BCELL[Population!="Lymphocytes",],res=resid(mer),pg=BCELL[Population!="Lymphocytes",Method:Population]))+geom_point(aes(x=fit,y=res))+ggtitle("Residuals vs Fitted")
-
-  ggplot(data.frame(fit=fitted(mer),BCELL[Population!="Lymphocytes",],res=resid(mer),pg=BCELL[Population!="Lymphocytes",Method:Population]))+geom_point(aes(x=Proportion,y=plogis(fit),col=Method))+ggtitle("Fitted vs Observed Proportions")+facet_grid(Center~Sample,scale="free")+geom_abline(aes(0,1),lty=2)+theme_bw()
+#Random effects for center and sample, as random intercept for each population:center and population:Sample
+  mer<-lmer(lp~Population*Method+(1|Center/Population)+(1|Sample/Population),BCELL[Population!="Lymphocytes"],REML=FALSE,verbose=FALSE)
 ```
+
+### Model fits and residuals
+
+
+```{r bcell_summarize_fitted,echo=FALSE,fig.height=6,fig.width=12,dpi=200}
+d <- data.frame(fit=fitted(mer),BCELL[Population!="Lymphocytes",],res=resid(mer),pg=BCELL[Population!="Lymphocytes",Method:Population])
+
+  ggplot(d)+geom_boxplot(aes(x=pg,y=fit,fill=Method))+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("fitted")+scale_x_discrete("Population:Gating Method")+scale_fill_discrete("Method")+ggtitle("Fitted Values (logit proportions) vs Method and Cell Population")+facet_wrap(~Sample,ncol=3)
+```
+
+```{r bcell_summarize_residuals,echo=FALSE,fig.height=5,fig.with=15,dpi=200,cache=FALSE}
+  ggplot(d)+geom_boxplot(aes(x=pg,y=res,fill=Method))+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("residuals")+scale_x_discrete("Population:Gating Method")+scale_fill_discrete("Method")+ggtitle("Residuals vs Method and Cell Population")+facet_wrap(~Sample,ncol=3)
+  
+   ggplot(d)+geom_point(aes(x=fit,y=res))+ggtitle("Residuals vs Fitted")
+
+  ggplot(d)+geom_point(aes(x=Proportion,y=plogis(fit),col=Method))+ggtitle("Fitted vs Observed Proportions")+facet_grid(Center~Sample,scale="free")+geom_abline(aes(0,1),lty=2)+theme_bw()
+```
+
+### Bias
+
+```{r bcell_bias,echo=FALSE,fig.width=5,fig.height=3,dpi=200}
+  d<-data.frame(d,fixed=predict(mer,REform=0))
+
+ d2<-cast(melt(d,id=c("Sample","Center","Population","Replicate","Method"),measure="fixed"),...~Method)
+
+  ggplot(d2)+geom_point(aes(x=plogis(Manual),y=plogis(OpenCyto),shape="OpenCyto",color=Population),size=3)+geom_abline(aes(0,1),lty=2)+geom_point(aes(x=plogis(Manual),y=plogis(flowDensity),shape="flowDensity",color=Population),size=3)+theme_bw()+ggtitle(wrap("B-cell Panel Bias. Fitted Effects of Manual vs Automated Gates",width=35))+scale_y_continuous("Automated Gating Estimate")+scale_x_continuous("Manual Gating Estimate")
+```
+
+### Variability
+
+```{r bcell_variance_components,echo=FALSE,fig.width=4,fig.height=4,dpi=200,message=FALSE}
+  #Extract Variance Components
+ vc <- VarCorr(mer)
+ foo<-capture.output({v <- as.numeric(print(vc,comp="Variance")[,3]);
+ names(v) <- print(vc,comp="Variance")[,1]})
+ v <- 100*v[order(v,decreasing=TRUE)]/sum(v)
+ v <- melt(v)
+  setnames(v,"VarComp")
+  v<-data.frame(v,Component=rownames(v))
+
+  #Reorder the levels by descending magnitude
+  ggplot(v,aes(x=reorder(Component,-VarComp),y=VarComp))+geom_bar(stat='identity')+ggtitle("B-cell Panel Variance Components")+scale_y_continuous("% of Variance Explained")+scale_x_discrete("Variance Component")+theme_bw()+theme(axis.text.x=element_text(angle=45,hjust=1))
+  
+```
+
+## Summary of B-cell Panel
+
+We note several things: 
+*  First, OpenCyto is slightly biased for the Plasmablast cell population. IT tends to overestimate it compared to the centralized manual gates.
+* Second, most of the variability is sample-to-sample biological variability, followed by residual within-sample variation, and then center-to-center variation. 
+* The most variable populations are the plasmablasts and the IgD+ subsets.
