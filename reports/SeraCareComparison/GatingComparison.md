@@ -16,7 +16,7 @@ options(markdown.HTML.header = unlist(sapply(system.file("misc", c("vignette.css
 
 
  
-## B-cell panel
+# B-cell panel
 
 
 ```r
@@ -248,7 +248,7 @@ We note several things:
 * Second, most of the variability is sample-to-sample biological variability, followed by residual within-sample variation, and then center-to-center variation. 
 * The most variable populations are the plasmablasts and the IgD+ subsets.
 
-## T-cell panel.
+# T-cell panel
 
 
 ```
@@ -476,7 +476,7 @@ TCELLS[, `:=`(Replicate, gl(nrow(.SD), 1)), list(Sample, Center, Population,
 ```
 
 
-## Mixed Model for T-cells
+## Mixed Model for T-cell Panel
 
 
 ```r
@@ -531,7 +531,7 @@ A couple of the CD8 populations exhibit some bias, but again, they are more cons
 
 
 
-## T-helper Panel
+# T-helper Panel
 
 
 ```
@@ -818,7 +818,7 @@ ggplot(THELPER[pops[c(10, 11, 12)]]) + geom_boxplot(aes(y = Proportion, x = Cent
 ![plot of chunk thelper_rawdata](figure/thelper_rawdata.png) 
 
 
-We fit the mixed model to the T-cell panel.
+We fit the mixed model to the T-helper panel.
 
 
 ```r
@@ -845,11 +845,9 @@ mer <- lmer(lp ~ Population * Method + (1 | Center/Population) + (1 | Sample/Pop
 ![plot of chunk thelper_variance_components](figure/thelper_variance_components.png) 
 
 
-## Summary of T-cell Panel
+## Summary of T-helper Panel
 
-A couple of the CD8 populations exhibit some bias, but again, they are more consistent across subjects and centers than the manual gating.
-
-
+The T-helper panel seems to have failed, as we have a lot of bias in the Th1 and Th2 populations.
 
 #######################################
 #######################################
@@ -857,11 +855,513 @@ A couple of the CD8 populations exhibit some bias, but again, they are more cons
 
 
 
-## DC / Mono / NK Panel
+# DC / Mono / NK Panel
 
+
+
+```
+##    Sample         Center                              File     
+##  1349 :441   Baylor  :189   1228-1_D1_D01.fcs           :  21  
+##  1369 :441   CIMR    :189   1228-2_D2_D02.fcs           :  21  
+##  12828:441   Miami   :189   1228-3_D3_D03.fcs           :  21  
+##              NHLBI   :189   12828_1_D1_D01.fcs          :  21  
+##              Stanford:189   12828_1_DC,2f,MONO,2f,NK.fcs:  21  
+##              UCLA    :189   12828_1_DcMonNk_D01.fcs     :  21  
+##              Yale    :189   (Other)                     :1197  
+##          Population    Proportion             Method      Replicate
+##  CD14+CD16+   :189   Min.   :0.0009   Manual     :441   Min.   :1  
+##  CD14-Lineage-:189   1st Qu.:0.0958   flowDensity:441   1st Qu.:1  
+##  CD16+CD56+   :189   Median :0.2122   OpenCyto   :441   Median :2  
+##  CD16+CD56-   :189   Mean   :0.2844                     Mean   :2  
+##  HLADR+       :189   3rd Qu.:0.4610                     3rd Qu.:3  
+##  CD11c-CD123+ :189   Max.   :0.8980                     Max.   :3  
+##  CD11c+CD123- :189                                                 
+##        lp              logp       
+##  Min.   :-6.958   Min.   :-6.970  
+##  1st Qu.:-2.245   1st Qu.:-2.346  
+##  Median :-1.312   Median :-1.550  
+##  Mean   :-1.399   Mean   :-1.810  
+##  3rd Qu.:-0.156   3rd Qu.:-0.774  
+##  Max.   : 2.176   Max.   :-0.108  
+## 
+```
+
+
+* There are some `NAs` again.
+
+
+```r
+m <- melt(DC_MONO, id = c("Sample", "Center", "Population", "Method"), measure = "Proportion")
+kable(cast(m, Method ~ Population), format = "html", table.attr = "id=\"dcmono_balance\"")
+```
+
+```
+## Aggregation requires fun.aggregate: length used as default
+```
+
+<table id="dcmono_balance">
+ <thead>
+  <tr>
+   <th>   </th>
+   <th> CD14+CD16+ </th>
+   <th> CD14-Lineage- </th>
+   <th> CD16+CD56+ </th>
+   <th> CD16+CD56- </th>
+   <th> HLADR+ </th>
+   <th> CD11c-CD123+ </th>
+   <th> CD11c+CD123- </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td> Manual </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+  </tr>
+  <tr>
+   <td> flowDensity </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+  </tr>
+  <tr>
+   <td> OpenCyto </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+  </tr>
+</tbody>
+</table>
+
+<br>
+
+We are missing some populations. 
+
+
+```r
+kable(cast(m, Method ~ Center), format = "html", table.attr = "id=\"dcmono_centers\"")
+```
+
+```
+## Aggregation requires fun.aggregate: length used as default
+```
+
+<table id="dcmono_centers">
+ <thead>
+  <tr>
+   <th>   </th>
+   <th> Baylor </th>
+   <th> CIMR </th>
+   <th> Miami </th>
+   <th> NHLBI </th>
+   <th> Stanford </th>
+   <th> UCLA </th>
+   <th> Yale </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td> Manual </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+  </tr>
+  <tr>
+   <td> flowDensity </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+  </tr>
+  <tr>
+   <td> OpenCyto </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+  </tr>
+</tbody>
+</table>
+
+
+
+```r
+DC_MONO <- DC_MONO[!Population %in% c("Monocytes", "CD14-Lineage+", "CD14+CD16-")]
+DC_MONO <- DC_MONO[, `:=`(Population, factor(Population))]
+m <- melt(DC_MONO, id = c("Sample", "Center", "Population", "Method"), measure = "Proportion")
+```
+
+
+The range of the data looks okay.
+
+`range(m$value)=[`9.4 &times; 10<sup>-4</sup>, 0.898`]`
+
+
+<script type="text/javascript" charset="utf-8">
+  $(document).ready(function() {
+    $('#dcmono_balance').dataTable();
+  } );
+</script>
+<script type="text/javascript" charset="utf-8">
+  $(document).ready(function() {
+    $('#dcmono_center').dataTable();
+  } );
+</script>
+
+* Annotate the technical replicates.
+
+
+```r
+DC_MONO[, `:=`(Replicate, gl(nrow(.SD), 1)), list(Sample, Center, Population, 
+    Method)]
+```
+
+```
+##       Sample Center                         File   Population Proportion
+##    1:  12828 Baylor 12828_1_DC,2f,MONO,2f,NK.fcs   CD14+CD16+    0.01370
+##    2:  12828 Baylor 12828_2_DC,2f,MONO,2f,NK.fcs   CD14+CD16+    0.01140
+##    3:  12828 Baylor 12828_3_DC,2f,MONO,2f,NK.fcs   CD14+CD16+    0.01180
+##    4:  12828   CIMR      DC_MONO_NK_12828001.fcs   CD14+CD16+    0.02380
+##    5:  12828   CIMR  DC_MONO_NK_12828001_001.fcs   CD14+CD16+    0.02530
+##   ---                                                                   
+## 1319:   1349  Miami          lot 1349_D5_D05.fcs CD11c+CD123-    0.16847
+## 1320:   1349  Miami          lot 1349_D6_D06.fcs CD11c+CD123-    0.22340
+## 1321:   1369  Miami          lot 1369_D7_D07.fcs CD11c+CD123-    0.11797
+## 1322:   1369  Miami          lot 1369_D8_D08.fcs CD11c+CD123-    0.11240
+## 1323:   1369  Miami          lot 1369_D9_D09.fcs CD11c+CD123-    0.08522
+##         Method Replicate     lp   logp
+##    1:   Manual         1 -4.276 -4.290
+##    2:   Manual         2 -4.462 -4.474
+##    3:   Manual         3 -4.427 -4.440
+##    4:   Manual         1 -3.714 -3.738
+##    5:   Manual         2 -3.651 -3.677
+##   ---                                 
+## 1319: OpenCyto         2 -1.596 -1.781
+## 1320: OpenCyto         3 -1.246 -1.499
+## 1321: OpenCyto         1 -2.012 -2.137
+## 1322: OpenCyto         2 -2.066 -2.186
+## 1323: OpenCyto         3 -2.373 -2.463
+```
+
+
+## Mixed Model for DC/Mono/NK Panel
+
+
+```r
+df <- cast(DC_MONO, Sample + Center + Method ~ Population + Replicate, value = "Proportion")
+DC_MONO <- DC_MONO[, `:=`(lp, logit(Proportion, adjust = 1e-05))]
+DC_MONO <- DC_MONO[, `:=`(logp, log(Proportion))]
+pops <- levels((DC_MONO$Population))
+setkey(DC_MONO, Population)
+ggplot(DC_MONO[pops[c(1:3)]]) + geom_boxplot(aes(y = Proportion, x = Center, 
+    fill = Method)) + facet_grid(Population ~ Sample, scales = "free") + theme(axis.text.x = element_text(angle = 45, 
+    hjust = 1)) + ggtitle("Raw DC/Mono/NK data")
+```
+
+![plot of chunk dcmono_rawdata](figure/dcmono_rawdata.png) 
+
+
+We fit the mixed model to the DC/Mono/NK panel.
+
+
+```r
+mer <- lmer(lp ~ Population * Method + (1 | Center/Population) + (1 | Sample/Population), 
+    DC_MONO[Population != "Lymphocytes"], REML = FALSE, verbose = FALSE)
+```
+
+
+
+
+![plot of chunk dcmono_summarize_fitted](figure/dcmono_summarize_fitted.png) 
+
+
+![plot of chunk dcmono_summarize_residuals](figure/dcmono_summarize_residuals1.png) ![plot of chunk dcmono_summarize_residuals](figure/dcmono_summarize_residuals2.png) ![plot of chunk dcmono_summarize_residuals](figure/dcmono_summarize_residuals3.png) 
+
+
+### Bias
+
+![plot of chunk dcmono_bias](figure/dcmono_bias1.png) ![plot of chunk dcmono_bias](figure/dcmono_bias2.png) ![plot of chunk dcmono_bias](figure/dcmono_bias3.png) 
+
+
+### Variability
+
+![plot of chunk dcmono_variance_components](figure/dcmono_variance_components.png) 
+
+
+## Summary of DC/Mono/NK Panel
+
+* Some bias in some populations.
+* Population-specific center-to-center variability is largest, followed by residual variation.
 
 
 #######################################
 #######################################
 
-## Treg Panel
+#  Treg Panel
+
+
+
+```
+##    Sample         Center                     File          Population 
+##  1349 :210   Baylor  :90   1228-1_B1_B01.fcs   : 10   Lo127Hi25 :126  
+##  1369 :210   CIMR    :90   1228-2_B2_B02.fcs   : 10   Naive     :126  
+##  12828:210   Miami   :90   1228-3_B3_B03.fcs   : 10   Memory    :126  
+##              NHLBI   :90   12828_1_B1_B01.fcs  : 10   Total Treg:126  
+##              Stanford:90   12828_1_T REG.fcs   : 10   Activated :126  
+##              UCLA    :90   12828_1_Treg_B01.fcs: 10                   
+##              Yale    :90   (Other)             :570                   
+##    Proportion           Method      Replicate       lp       
+##  Min.   :0.00034   Manual  :315   Min.   :1   Min.   :-7.95  
+##  1st Qu.:0.00845   OpenCyto:315   1st Qu.:1   1st Qu.:-4.76  
+##  Median :0.03289                  Median :2   Median :-3.38  
+##  Mean   :0.04084                  Mean   :2   Mean   :-3.79  
+##  3rd Qu.:0.06271                  3rd Qu.:3   3rd Qu.:-2.70  
+##  Max.   :0.17197                  Max.   :3   Max.   :-1.57  
+##                                                              
+##       logp      
+##  Min.   :-7.98  
+##  1st Qu.:-4.77  
+##  Median :-3.42  
+##  Mean   :-3.83  
+##  3rd Qu.:-2.77  
+##  Max.   :-1.76  
+## 
+```
+
+
+* There are some `NAs` again.
+
+
+```r
+m <- melt(TREG, id = c("Sample", "Center", "Population", "Method"), measure = "Proportion")
+kable(cast(m, Method ~ Population), format = "html", table.attr = "id=\"treg_balance\"")
+```
+
+```
+## Aggregation requires fun.aggregate: length used as default
+```
+
+<table id="treg_balance">
+ <thead>
+  <tr>
+   <th>   </th>
+   <th> Lo127Hi25 </th>
+   <th> Naive </th>
+   <th> Memory </th>
+   <th> Total Treg </th>
+   <th> Activated </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td> Manual </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+  </tr>
+  <tr>
+   <td> OpenCyto </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+  </tr>
+</tbody>
+</table>
+
+<br>
+
+Populations are balanced.
+
+
+```r
+kable(cast(m, Method ~ Center), format = "html", table.attr = "id=\"treg_centers\"")
+```
+
+```
+## Aggregation requires fun.aggregate: length used as default
+```
+
+<table id="treg_centers">
+ <thead>
+  <tr>
+   <th>   </th>
+   <th> Baylor </th>
+   <th> CIMR </th>
+   <th> Miami </th>
+   <th> NHLBI </th>
+   <th> Stanford </th>
+   <th> UCLA </th>
+   <th> Yale </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td> Manual </td>
+   <td> 45 </td>
+   <td> 45 </td>
+   <td> 45 </td>
+   <td> 45 </td>
+   <td> 45 </td>
+   <td> 45 </td>
+   <td> 45 </td>
+  </tr>
+  <tr>
+   <td> OpenCyto </td>
+   <td> 45 </td>
+   <td> 45 </td>
+   <td> 45 </td>
+   <td> 45 </td>
+   <td> 45 </td>
+   <td> 45 </td>
+   <td> 45 </td>
+  </tr>
+</tbody>
+</table>
+
+
+Centers are also balanced 
+
+We drop Lymphocytes, CD3 and CD4.
+
+```r
+TREG <- TREG[!Population %in% c("Lymphocytes", "CD3", "CD4")]
+TREG <- TREG[, `:=`(Population, factor(Population))]
+m <- melt(TREG, id = c("Sample", "Center", "Population", "Method"), measure = "Proportion")
+```
+
+
+The range of the data looks okay.
+
+`range(m$value)=[`3.41 &times; 10<sup>-4</sup>, 0.172`]`
+
+
+<script type="text/javascript" charset="utf-8">
+  $(document).ready(function() {
+    $('#treg_balance').dataTable();
+  } );
+</script>
+<script type="text/javascript" charset="utf-8">
+  $(document).ready(function() {
+    $('#treg_center').dataTable();
+  } );
+</script>
+
+* Annotate the technical replicates.
+
+
+```r
+TREG[, `:=`(Replicate, gl(nrow(.SD), 1)), list(Sample, Center, Population, Method)]
+```
+
+```
+##      Sample Center                  File Population Proportion   Method
+##   1:  12828 Baylor     12828_1_T REG.fcs  Lo127Hi25   0.131000   Manual
+##   2:  12828 Baylor     12828_2_T REG.fcs  Lo127Hi25   0.127000   Manual
+##   3:  12828 Baylor     12828_3_T REG.fcs  Lo127Hi25   0.130000   Manual
+##   4:  12828   CIMR     TREG_12828_P1.fcs  Lo127Hi25   0.113000   Manual
+##   5:  12828   CIMR TREG_12828_001_P1.fcs  Lo127Hi25   0.109000   Manual
+##  ---                                                                   
+## 626:   1349   CIMR  TREG_1349_002_P1.fcs  Activated   0.008380 OpenCyto
+## 627:   1349   CIMR      TREG_1349_P1.fcs  Activated   0.008672 OpenCyto
+## 628:   1369   CIMR  TREG_1369_001_P1.fcs  Activated   0.000958 OpenCyto
+## 629:   1369   CIMR  TREG_1369_002_P1.fcs  Activated   0.001086 OpenCyto
+## 630:   1369   CIMR      TREG_1369_P1.fcs  Activated   0.000618 OpenCyto
+##      Replicate     lp   logp
+##   1:         1 -1.892 -2.033
+##   2:         2 -1.928 -2.064
+##   3:         3 -1.901 -2.040
+##   4:         1 -2.060 -2.180
+##   5:         2 -2.101 -2.216
+##  ---                        
+## 626:         2 -4.772 -4.782
+## 627:         3 -4.738 -4.748
+## 628:         1 -6.939 -6.951
+## 629:         2 -6.815 -6.825
+## 630:         3 -7.372 -7.389
+```
+
+
+## Mixed Model for T-reg Panel
+
+
+```r
+df <- cast(TREG, Sample + Center + Method ~ Population + Replicate, value = "Proportion")
+TREG <- TREG[, `:=`(lp, logit(Proportion, adjust = 1e-05))]
+TREG <- TREG[, `:=`(logp, log(Proportion))]
+pops <- levels((TREG$Population))
+setkey(TREG, Population)
+ggplot(TREG[pops[c(1:3, 5)]]) + geom_boxplot(aes(y = Proportion, x = Center, 
+    fill = Method)) + facet_grid(Population ~ Sample, scales = "free") + theme(axis.text.x = element_text(angle = 45, 
+    hjust = 1)) + ggtitle("Raw DC/Mono/NK data")
+```
+
+![plot of chunk treg_rawdata](figure/treg_rawdata.png) 
+
+
+We fit the mixed model to the T-reg panel.
+
+
+```r
+mer <- lmer(lp ~ Population * Method + (1 | Center/Population) + (1 | Sample/Population), 
+    TREG[Population != "Lymphocytes"], REML = FALSE, verbose = FALSE)
+```
+
+
+
+
+![plot of chunk treg_summarize_fitted](figure/treg_summarize_fitted.png) 
+
+
+![plot of chunk treg_summarize_residuals](figure/treg_summarize_residuals1.png) ![plot of chunk treg_summarize_residuals](figure/treg_summarize_residuals2.png) ![plot of chunk treg_summarize_residuals](figure/treg_summarize_residuals3.png) 
+
+
+### Bias
+
+
+```
+## Scale for 'x' is already present. Adding another scale for 'x', which will
+## replace the existing scale. Scale for 'y' is already present. Adding
+## another scale for 'y', which will replace the existing scale.
+```
+
+![plot of chunk treg_bias](figure/treg_bias1.png) ![plot of chunk treg_bias](figure/treg_bias2.png) ![plot of chunk treg_bias](figure/treg_bias3.png) 
+
+
+### Variability
+
+![plot of chunk treg_variance_components](figure/treg_variance_components.png) 
+
+
+## Summary of T-reg Panel
+
+* Interestingly, there is a global sample-to-sample shift
+* There is also population-specific sample-to-sample variation
+* Automated gating is largely unbiased for this panel
+
