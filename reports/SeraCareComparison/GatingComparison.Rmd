@@ -80,7 +80,7 @@ We want to model variability between centers, between subjects, and contrast gat
 
 ```{r bcell_boxplot,fig.width=10,fig.height=5,fig.cap="Boxplots of log proportions for each center and cell population by subject and gating method.",cache=TRUE,dpi=300}
   df<-cast(BCELL,Sample+Center+Method~Population+Replicate,value="Proportion")
-  BCELL <- BCELL[,lp:=logit(Proportion)]
+  BCELL <- BCELL[,lp:=logit(Proportion,adjust=0.00001)]
   BCELL <- BCELL[,logp:=log(Proportion)]
   pops <- levels(BCELL$Population)
   setkey(BCELL,Population)
@@ -124,6 +124,14 @@ d <- data.frame(fit=fitted(mer),BCELL[Population!="Lymphocytes",],res=resid(mer)
  d2<-cast(melt(d,id=c("Sample","Center","Population","Replicate","Method"),measure="fixed"),...~Method)
 
   ggplot(d2)+geom_point(aes(x=plogis(Manual),y=plogis(OpenCyto),shape="OpenCyto",color=Population),size=3)+geom_abline(aes(0,1),lty=2)+geom_point(aes(x=plogis(Manual),y=plogis(flowDensity),shape="flowDensity",color=Population),size=3)+theme_bw()+ggtitle(wrap("B-cell Panel Bias. Fitted Effects of Manual vs Automated Gates",width=35))+scale_y_continuous("Automated Gating Estimate")+scale_x_continuous("Manual Gating Estimate")
+
+# Relative bias
+  d3<-data.table(d)[,list(Method,diff.rel.pct=100*(.SD[,fixed]-.SD[Method=="Manual",fixed])/(.SD[Method=="Manual",fixed])),list(Sample,Center,Population,Replicate)]
+
+ggplot(unique(d3[Method!="Manual"]))+geom_bar(aes(x=Population,y=diff.rel.pct,fill=Method),position="dodge",stat='identity')+coord_flip()+theme_bw()+scale_x_discrete("Cell Population")+scale_y_continuous("Percent Relative Difference")+ggtitle("B-cell Panel Bias as Percent Relative Difference")
+
+# CV for plasmablasts
+ggplot(BCELL[Population%in%c("Naive","Plasmablasts"),list(CV=var(log(Proportion))),list(Center,Method,Population)])+geom_boxplot(aes(y=CV,x=Method))+ggtitle("Distribution of Plasmablast CV across Subjects within Centers, by Gating Method")+theme_bw()+facet_wrap(~Population,scale="free")
 ```
 
 ### Variability
@@ -137,9 +145,9 @@ d <- data.frame(fit=fitted(mer),BCELL[Population!="Lymphocytes",],res=resid(mer)
  v <- melt(v)
   setnames(v,"VarComp")
   v<-data.frame(v,Component=rownames(v))
-
-  #Reorder the levels by descending magnitude
-  ggplot(v,aes(x=reorder(Component,-VarComp),y=VarComp))+geom_bar(stat='identity')+ggtitle("B-cell Panel Variance Components")+scale_y_continuous("% of Variance Explained")+scale_x_discrete("Variance Component")+theme_bw()+theme(axis.text.x=element_text(angle=45,hjust=1))
+  v$Component <- ordered(v$Component,levels=v$Component)
+    #Reorder the levels by descending magnitude
+  ggplot(v,aes(x=Component,y=VarComp))+geom_bar(stat='identity')+ggtitle("B-cell Panel Variance Components")+scale_y_continuous("% of Variance Explained")+scale_x_discrete("Variance Component")+theme_bw()+theme(axis.text.x=element_text(angle=45,hjust=1))
   
 ```
 
@@ -149,3 +157,265 @@ We note several things:
 *  First, OpenCyto is slightly biased for the Plasmablast cell population. IT tends to overestimate it compared to the centralized manual gates.
 * Second, most of the variability is sample-to-sample biological variability, followed by residual within-sample variation, and then center-to-center variation. 
 * The most variable populations are the plasmablasts and the IgD+ subsets.
+
+## T-cell panel.
+
+```{r Tcell,echo=FALSE}
+  TCELLS <- data.table(TCELLS)
+  summary(TCELLS)
+  TCELLS <- na.omit(TCELLS)
+```
+
+* There are some `NAs` again.
+
+```{r tcell_balance,results='asis'}
+  m<-melt(TCELLS,id=c("Sample","Center","Population","Method"),measure="Proportion")
+  kable(cast(m,Method~Population),format='html',table.attr='id="tcell_balance"')
+```
+<br>
+For some reason there are more observations from flowDensity and Manual gating than OpenCyto.
+
+```{r tcell_centers,results='asis'}
+  kable(cast(m,Method~Center),format='html',table.attr='id="tcell_centers"')
+```
+* And we see the reason is that OpenCyto gating was not done on CIMR.
+* We'll drop CIMR for the purposes of the analysis.
+
+The range of the data looks okay.
+
+`range(m$value)=[``r range(m$value)``]`
+
+
+<script type="text/javascript" charset="utf-8">
+  $(document).ready(function() {
+    $('#tcell_balance').dataTable();
+  } );
+</script>
+<script type="text/javascript" charset="utf-8">
+  $(document).ready(function() {
+    $('#tcell_center').dataTable();
+  } );
+</script>
+
+* Annotate the technical replicates.
+
+```{r tcell_techrep_annotate}
+  TCELLS[,Replicate:=gl(nrow(.SD),1),list(Sample,Center,Population,Method)]
+```
+
+## Mixed Model for T-cells
+
+```{r tcell_rawdata}
+  TCELLS<-TCELLS[Center!="CIMR"] #drop CIMR
+  df<-cast(TCELLS,Sample+Center+Method~Population+Replicate,value="Proportion")
+  TCELLS <- TCELLS[,lp:=logit(Proportion,adjust=0.00001)]
+  TCELLS <- TCELLS[,logp:=log(Proportion)]
+  pops <- levels(TCELLS$Population)
+  setkey(TCELLS,Population)
+  ggplot(TCELLS[pops[c(3,5,12)]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))+ggtitle("Raw T-cell data")
+```
+
+We fit the mixed model to the T-cell panel.
+
+```{r tcell_mixedmodel}
+  mer<-lmer(lp~Population*Method+(1|Center/Population)+(1|Sample/Population),TCELLS[Population!="Lymphocytes"],REML=FALSE,verbose=FALSE)
+```
+
+
+
+```{r tcell_summarize_fitted,echo=FALSE,fig.height=6,fig.width=12,dpi=200}
+d <- data.frame(fit=fitted(mer),TCELLS[Population!="Lymphocytes",],res=resid(mer),pg=TCELLS[Population!="Lymphocytes",Method:Population])
+
+  ggplot(d)+geom_boxplot(aes(x=pg,y=fit,fill=Method))+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("fitted")+scale_x_discrete("Population:Gating Method")+scale_fill_discrete("Method")+ggtitle("Fitted Values (logit proportions) vs Method and Cell Population")+facet_wrap(~Sample,ncol=3)
+```
+
+```{r tcell_summarize_residuals,echo=FALSE,fig.height=5,fig.with=15,dpi=200,cache=FALSE}
+  ggplot(d)+geom_boxplot(aes(x=pg,y=res,fill=Method))+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("residuals")+scale_x_discrete("Population:Gating Method")+scale_fill_discrete("Method")+ggtitle("Residuals vs Method and Cell Population")+facet_wrap(~Sample,ncol=3)
+  
+   ggplot(d)+geom_point(aes(x=fit,y=res))+ggtitle("Residuals vs Fitted")
+
+  ggplot(d)+geom_point(aes(x=Proportion,y=plogis(fit),col=Method))+ggtitle("Fitted vs Observed Proportions")+facet_grid(Center~Sample,scale="free")+geom_abline(aes(0,1),lty=2)+theme_bw()
+```
+
+### Bias
+
+```{r tcell_bias,echo=FALSE,fig.width=5,fig.height=3,dpi=200}
+  d<-data.frame(d,fixed=predict(mer,REform=0))
+
+ d2<-cast(melt(d,id=c("Sample","Center","Population","Replicate","Method"),measure="fixed"),...~Method)
+
+  ggplot(d2)+geom_point(aes(x=plogis(Manual),y=plogis(OpenCyto),shape="OpenCyto",color=Population),size=3)+geom_abline(aes(0,1),lty=2)+geom_point(aes(x=plogis(Manual),y=plogis(flowDensity),shape="flowDensity",color=Population),size=3)+theme_bw()+ggtitle(wrap("T-cell Panel Bias. Fitted Effects of Manual vs Automated Gates",width=35))+scale_y_continuous("Automated Gating Estimate")+scale_x_continuous("Manual Gating Estimate")
+
+# Relative bias
+  d3<-data.table(d)[,list(Method,diff.rel.pct=100*(.SD[,fixed]-.SD[Method=="Manual",fixed])/(.SD[Method=="Manual",fixed])),list(Sample,Center,Population,Replicate)]
+
+ggplot(unique(d3[Method!="Manual"]))+geom_bar(aes(x=Population,y=diff.rel.pct,fill=Method),position="dodge",stat='identity')+coord_flip()+theme_bw()+scale_x_discrete("Cell Population")+scale_y_continuous("Percent Relative Difference")+ggtitle("T-cell Panel Bias as Percent Relative Difference")
+
+# CV for CD8, CD4 CM, CD4 Activated
+ggplot(TCELLS[Population%in%c("CD8 Effector Memory","CD8 Central Memory","CD8 Naive"),list(CV=var(log(Proportion))),list(Center,Method,Population)])+geom_boxplot(aes(y=CV,x=Method))+ggtitle("Distribution of fo CV across Subjects within Centers, by Gating Method")+theme_bw()+facet_wrap(~Population)
+```
+
+### Variability
+
+```{r tcell_variance_components,echo=FALSE,fig.width=4,fig.height=4,dpi=200,message=FALSE}
+  #Extract Variance Components
+ vc <- VarCorr(mer)
+ foo<-capture.output({v <- as.numeric(print(vc,comp="Variance")[,3]);
+ names(v) <- print(vc,comp="Variance")[,1]})
+ v <- 100*v[order(v,decreasing=TRUE)]/sum(v)
+ v <- melt(v)
+  setnames(v,"VarComp")
+  v<-data.frame(v,Component=rownames(v))
+  v$Component<-ordered(v$Component,levels=v$Component)
+  #Reorder the levels by descending magnitude
+  ggplot(v,aes(x=Component,y=VarComp))+geom_bar(stat='identity')+ggtitle("T-cell Panel Variance Components")+scale_y_continuous("% of Variance Explained")+scale_x_discrete("Variance Component")+theme_bw()+theme(axis.text.x=element_text(angle=45,hjust=1))
+```
+
+## Summary of T-cell Panel
+
+A couple of the CD8 populations exhibit some bias, but again, they are more consistent across subjects and centers than the manual gating.
+
+#######################################
+#######################################
+
+
+
+
+## T-helper Panel
+
+```{r Thelper,echo=FALSE}
+  THELPER <- data.table(THELPER)
+  summary(THELPER)
+  THELPER <- na.omit(THELPER)
+  THELPER<-THELPER[!Population%in%c("Lymphocytes","CD3","CD4","CD8")]
+```
+
+* There are some `NAs` again.
+
+```{r thelper_balance,results='asis'}
+  m<-melt(THELPER,id=c("Sample","Center","Population","Method"),measure="Proportion")
+  kable(cast(m,Method~Population),format='html',table.attr='id="thelper_balance"')
+```
+<br>
+
+```{r thelper_centers,results='asis'}
+  kable(cast(m,Method~Center),format='html',table.attr='id="thelper_centers"')
+  kable(cast(m,Method~Population),format='html',table.attr='id="thelper_populations"')
+
+```
+Things look balanced, and we have removed the Lymphocytes, CD8, CD4, and CD3 cells since they are not terminal populations.
+
+The range of the data looks okay.
+
+`range(m$value)=[``r range(m$value)``]`
+
+
+<script type="text/javascript" charset="utf-8">
+  $(document).ready(function() {
+    $('#thelper_balance').dataTable();
+  } );
+</script>
+<script type="text/javascript" charset="utf-8">
+  $(document).ready(function() {
+    $('#thelper_center').dataTable();
+  } );
+</script>
+<script type="text/javascript" charset="utf-8">
+  $(document).ready(function() {
+    $('#thelper_populations').dataTable();
+  } );
+</script>
+
+* Annotate the technical replicates.
+
+```{r thelper_techrep_annotate}
+  THELPER[,Replicate:=gl(nrow(.SD),1),list(Sample,Center,Population,Method)]
+```
+
+## Mixed Model for T-helper panel
+
+```{r thelper_rawdata}
+  df<-cast(THELPER,Sample+Center+Method~Population+Replicate,value="Proportion")
+  THELPER <- THELPER[,lp:=logit(Proportion,adjust=0.00001)]
+  THELPER <- THELPER[,logp:=log(Proportion)]
+  pops <- levels((THELPER$Population))
+  setkey(THELPER,Population)
+  ggplot(THELPER[pops[c(10,11,12)]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))+ggtitle("Raw T-helper data")
+```
+
+We fit the mixed model to the T-cell panel.
+
+```{r thelper_mixedmodel}
+  mer<-lmer(lp~Population*Method+(1|Center/Population)+(1|Sample/Population),THELPER[Population!="Lymphocytes"],REML=FALSE,verbose=FALSE)
+```
+
+
+
+```{r thelper_summarize_fitted,echo=FALSE,fig.height=6,fig.width=12,dpi=200}
+d <- data.frame(fit=fitted(mer),THELPER[Population!="Lymphocytes",],res=resid(mer),pg=THELPER[Population!="Lymphocytes",Method:Population])
+
+  ggplot(d)+geom_boxplot(aes(x=pg,y=fit,fill=Method))+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("fitted")+scale_x_discrete("Population:Gating Method")+scale_fill_discrete("Method")+ggtitle("Fitted Values (logit proportions) vs Method and Cell Population")+facet_wrap(~Sample,ncol=3)
+```
+
+```{r thelper_summarize_residuals,echo=FALSE,fig.height=5,fig.with=15,dpi=200,cache=FALSE}
+  ggplot(d)+geom_boxplot(aes(x=pg,y=res,fill=Method))+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("residuals")+scale_x_discrete("Population:Gating Method")+scale_fill_discrete("Method")+ggtitle("Residuals vs Method and Cell Population")+facet_wrap(~Sample,ncol=3)
+  
+   ggplot(d)+geom_point(aes(x=fit,y=res))+ggtitle("Residuals vs Fitted")
+
+  ggplot(d)+geom_point(aes(x=Proportion,y=plogis(fit),col=Method))+ggtitle("Fitted vs Observed Proportions")+facet_grid(Center~Sample,scale="free")+geom_abline(aes(0,1),lty=2)+theme_bw()
+```
+
+### Bias
+
+```{r thelper_bias,echo=FALSE,fig.width=5,fig.height=3,dpi=200}
+  d<-data.frame(d,fixed=predict(mer,REform=0))
+
+ d2<-cast(melt(d,id=c("Sample","Center","Population","Replicate","Method"),measure="fixed"),...~Method)
+
+  ggplot(d2)+geom_point(aes(x=plogis(Manual),y=plogis(OpenCyto),shape="OpenCyto",color=Population),size=3)+geom_abline(aes(0,1),lty=2)+geom_point(aes(x=plogis(Manual),y=plogis(flowDensity),shape="flowDensity",color=Population),size=3)+theme_bw()+ggtitle(wrap("T-helper Panel Bias. Fitted Effects of Manual vs Automated Gates",width=35))+scale_y_continuous("Automated Gating Estimate")+scale_x_continuous("Manual Gating Estimate")
+
+# Relative bias
+  d3<-data.table(d)[,list(Method,diff.rel.pct=100*(.SD[,fixed]-.SD[Method=="Manual",fixed])/(.SD[Method=="Manual",fixed])),list(Sample,Center,Population,Replicate)]
+
+ggplot(unique(d3[Method!="Manual"]))+geom_bar(aes(x=Population,y=diff.rel.pct,fill=Method),position="dodge",stat='identity')+coord_flip()+theme_bw()+scale_x_discrete("Cell Population")+scale_y_continuous("Percent Relative Difference")+ggtitle("T-helper Panel Bias as Percent Relative Difference")
+
+# CV for CD8, CD4 CM, CD4 Activated
+ggplot(THELPER[Population%in%c("CD8 Th2","CD8 Th1","CD4 Th2","CD4 Th1"),list(CV=var(log(Proportion))),list(Center,Method,Population)])+geom_boxplot(aes(y=CV,x=Method))+ggtitle("Distribution of CV across Subjects within Centers, by Gating Method")+theme_bw()+facet_wrap(~Population)
+```
+
+### Variability
+
+```{r thelper_variance_components,echo=FALSE,fig.width=4,fig.height=4,dpi=200,message=FALSE}
+  #Extract Variance Components
+ vc <- VarCorr(mer)
+ foo<-capture.output({v <- as.numeric(print(vc,comp="Variance")[,3]);
+ names(v) <- print(vc,comp="Variance")[,1]})
+ v <- 100*v[order(v,decreasing=TRUE)]/sum(v)
+ v <- melt(v)
+  setnames(v,"VarComp")
+  v<-data.frame(v,Component=rownames(v))
+  v$Component<-ordered(v$Component,levels=v$Component)
+  #Reorder the levels by descending magnitude
+  ggplot(v,aes(x=Component,y=VarComp))+geom_bar(stat='identity')+ggtitle("T-helper Panel Variance Components")+scale_y_continuous("% of Variance Explained")+scale_x_discrete("Variance Component")+theme_bw()+theme(axis.text.x=element_text(angle=45,hjust=1))
+```
+
+## Summary of T-cell Panel
+
+A couple of the CD8 populations exhibit some bias, but again, they are more consistent across subjects and centers than the manual gating.
+
+
+
+#######################################
+#######################################
+
+
+
+
+## DC / Mono / NK Panel
+
+
+
+#######################################
+#######################################
+
+## Treg Panel

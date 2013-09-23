@@ -160,8 +160,9 @@ Tcell.central.map <- as.list(pops[[selected,"C"]])
 Tcell.FD.map <- as.list(pops[[selected,"FD"]])
 Tcell.OC.map <- as.list(pops[[selected,"OC"]])
 names(Tcell.central.map) <- c("Lymphocytes","CD3","CD4","CD4 Activated","CD4 Naive","CD4 Central Memory","CD4 Effector Memory","CD4 Effector","CD8","CD8 Activated","CD8 Naive","CD8 Central Memory","CD8 Effector Memory", "CD8 Effector")
-names(Tcell.FD.map) <- c("remove","CD3","CD4 Effector Memory","CD4 Effector","CD4 Central Memory","CD4 Naive","remove","remove","remove","CD4 Activated","CD8","CD4","CD8 Effector Memory","CD8 Effector","CD8 Central Memory","CD8 Naive","remove","remove","remove","CD8 Activated","remove","Lymphocytes","remove")
-names(Tcell.OC.map) <- c("CD8","CD4","CD8 Effector Memory","CD8 Effector","CD8 Central Memory","CD8 Naive","CD4 Effector Memory","CD4 Effector","CD4 Central Memory","CD4 Naive","CD8 Activated","CD4 Activated","CD3","Lymphocytes")
+names(Tcell.FD.map) <- c("remove","CD3","CD8","CD4 Effector Memory", "CD4 Effector","CD4 Central Memory","CD4 Naive","remove","remove","remove","CD4 Activated","CD4","CD8 Effector Memory","CD8 Effector","CD8 Central Memory","CD8 Naive","remove","remove","remove","CD8 Activated","remove","Lymphocytes","remove")
+#  c("remove","CD3","CD4 Effector Memory","CD4 Effector","CD4 Central Memory","CD4 Naive","remove","remove","remove","CD4 Activated","CD8","CD4","CD8 Effector Memory","CD8 Effector","CD8 Central Memory","CD8 Naive","remove","remove","remove","CD8 Activated","remove","Lymphocytes","remove")
+names(Tcell.OC.map) <- c("CD8","CD4","CD8 Effector Memory","CD8 Effector","CD8 Central Memory","CD8 Naive","CD8 Activated","CD4 Effector Memory","CD4 Effector","CD4 Central Memory","CD4 Naive","CD4 Activated","CD3","Lymphocytes")
 
 #Remap Tcells
 CGates[[selected]]$Population <-mapvalues(CGates[[selected]]$Population,from=do.call(c,Tcell.central.map),to=names(Tcell.central.map))
@@ -185,7 +186,7 @@ TCELL.CV <- melt(ddply(cast(TCELL.CV,value="CV",id=c("Sample","Population","Meth
 setnames(TCELL.CV,c("variable","value"),c("Method","CV"))
 
 pdf("Comparison/TCELLS.pdf",width=15,height=5)
-ggplot(subset(TCELL.CV,!(Population%in%"Lymphocytes")&Method%in%c("Manual","Automated")))+geom_bar(aes(y=CV,x=Method,fill=Method),stat="identity")+facet_grid(Sample~Population)+theme(axis.text.x=element_text(angle=90,hjust=1),strip.text.x=element_text(size=8))
+ggplot(subset(TCELL.CV,!(Population%in%"Lymphocytes")))+geom_bar(aes(y=CV,x=Method,fill=Method),stat="identity")+facet_grid(Sample~Population)+theme(axis.text.x=element_text(angle=90,hjust=1),strip.text.x=element_text(size=8))
 dev.off()
 
 
@@ -213,7 +214,7 @@ cbind(OCGates[[selected]][,1:5],Method="OpenCyto")),!Population%in%"remove")
 TREG.CV <- ddply(TREG,.(Sample,Method,Population),summarize,CV=sd(Proportion,na.rm=TRUE)/mean(Proportion,na.rm=TRUE))
 
 pdf("Comparison/TREG.pdf",width=15,height=5)
-ggplot(subset(TREG.CV,!(Population%in%"Lymphocytes")&Method%in%c("Manual","Automated")))+geom_bar(aes(y=CV,x=Method,fill=Method),stat="identity")+facet_grid(Sample~Population)+theme(axis.text.x=element_text(angle=90,hjust=1),strip.text.x=element_text(size=8))
+ggplot(subset(TREG.CV,!(Population%in%"Lymphocytes")&Method%in%c("Manual","OpenCyto")))+geom_bar(aes(y=CV,x=Method,fill=Method),stat="identity")+facet_grid(Sample~Population)+theme(axis.text.x=element_text(angle=90,hjust=1),strip.text.x=element_text(size=8))
 dev.off()
 
 
@@ -231,6 +232,7 @@ remap <- function(G,m){
   G$Population <- mapvalues(G$Population,from=do.call(c,m),to=names(m))
   G
 }
+
 ## Remap Bcells
 CGates[[selected]]$Population <- remap(CGates[[selected]],Bcell.central.map)$Population
 OCGates[[selected]]$Population <- remap(OCGates[[selected]],Bcell.OC.map)$Population
@@ -296,7 +298,7 @@ DC_MONO.CV <- melt(ddply(cast(DC_MONO.CV,value="CV",id=c("Sample","Population","
 setnames(DC_MONO.CV,c("variable","value"),c("Method","CV"))
 
 pdf("Comparison/DC_MONO.pdf",width=15,height=5)
-ggplot(subset(DC_MONO.CV,!(Population%in%"Monocytes")&Method%in%c("Manual","Automated")))+geom_bar(aes(y=CV,x=Method,fill=Method),stat="identity")+facet_grid(Sample~Population)+theme(axis.text.x=element_text(angle=90,hjust=1),strip.text.x=element_text(size=8))
+ggplot(subset(DC_MONO.CV,!(Population%in%"Monocytes")))+geom_bar(aes(y=CV,x=Method,fill=Method),stat="identity")+facet_grid(Sample~Population)+theme(axis.text.x=element_text(angle=90,hjust=1),strip.text.x=element_text(size=8))
 dev.off()
 
 
@@ -315,8 +317,8 @@ Thelper.central.map <- as.list(pops[[selected,"C"]])
 Thelper.FD.map <- as.list(pops[[selected,"FD"]])
 Thelper.OC.map <- as.list(pops[[selected,"OC"]])
 names(Thelper.central.map) <- c("Lymphocytes","CD3","CD4","CD4 Activated","CD4 Th1","CD4 Th2","CD4 Th17","CD8","CD8 Activated","CD8 Th1","CD8 Th2","CD8 Th17")
-names(Thelper.FD.map) <- c("remove","CD3","remove","remove","remove","CD4 Activated","CD4","CD8","CD4 Th2","CD4 Th17","CD4 Th1","remove","remove","remove","remove","CD8 Activated","CD8 Th2","CD8 Th17","CD8 Th1","remove","remove","Lymphocytes","remove")
-names(Thelper.OC.map) <- c("CD8","CD4","remove","remove","remove","CD8 Activated","remove","remove","remove","CD4 Activated","CD8 Th2","CD8 Th17","CD8 Th1","remove","CD4 Th2","CD4 Th17", "CD4 Th1","remove","CD3","remove")
+names(Thelper.FD.map) <- c("remove","remove","Lymphocytes","remove","CD3","CD8","remove","remove","remove","CD4 Activated","CD4","CD4 Th2","CD4 Th17","CD4 Th1","remove","remove","remove","remove","CD8 Activated","CD8 Th2","CD8 Th17","CD8 Th1","remove")
+names(Thelper.OC.map) <- c("CD8","CD4","remove","remove","remove","CD8 Activated","CD8 Th2","CD8 Th17","CD8 Th1","remove","remove","remove","remove","CD4 Activated","CD4 Th2","CD4 Th17", "CD4 Th1","remove","CD3","remove")
 
 ## Map
 CGates[[selected]]$Population <- remap(CGates[[selected]],Thelper.central.map)$Population
