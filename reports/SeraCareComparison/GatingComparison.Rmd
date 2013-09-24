@@ -91,11 +91,15 @@ We want to model variability between centers, between subjects, and contrast gat
   ggplot(BCELL[pops[c(3,5,7)]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))+ggtitle("Raw B-cell data")
 ```
 
+## Mixed Model for B-cell Panel
+
 How we'll model this is the following. We'll have fixed effects for gating methods, cell populations and their interactions. That is becausewe want to esimate the effec of each gating method on each population.
 
 We fit a random intercept for Sample and Center as well as for each level of Population:Center and Population:Sample. The idea here is that cell population estimates will vary from center to center and from sample to sample, by more than just a fixed offset. 
 
 We fit the reponse (proportions) on the logit scale.
+
+## Model fit and tests of gating contrasts
 
 ```{r bcell_anova,cache=FALSE}
 #Estimate fixed effects for population and method and their interaction
@@ -222,7 +226,7 @@ The range of the data looks okay.
   TCELLS[,Population:=factor(Population)]
 ```
 
-## Mixed Model for T-cell Panel
+## Raw data for T-cell panel
 
 ```{r tcell_rawdata}
   TCELLS<-TCELLS[Center!="CIMR"] #drop CIMR
@@ -233,6 +237,10 @@ The range of the data looks okay.
   setkey(TCELLS,Population)
   ggplot(TCELLS[pops[c(3,5,12)]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))+ggtitle("Raw T-cell data")
 ```
+
+
+## Mixed Model for T-cell Panel and tests of gating contrasts
+
 
 We fit the mixed model to the T-cell panel.
 
@@ -366,7 +374,7 @@ The range of the data looks okay.
   THELPER[,Population:=factor(Population)]
 ```
 
-## Mixed Model for T-helper panel
+## Raw data for T-helper panel 
 
 ```{r thelper_rawdata}
   df<-cast(THELPER,Sample+Center+Method~Population+Replicate,value="Proportion")
@@ -376,6 +384,9 @@ The range of the data looks okay.
   setkey(THELPER,Population)
   ggplot(THELPER[pops[1:3]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))+ggtitle("Raw T-helper data")
 ```
+
+
+## Mixed Model for T-helper panel and tests of gating contrasts
 
 We fit the mixed model to the T-helper panel.
 
@@ -507,7 +518,7 @@ The range of the data looks okay.
   DC_MONO[,Replicate:=gl(nrow(.SD),1),list(Sample,Center,Population,Method)]
 ```
 
-## Mixed Model for DC/Mono/NK Panel
+## Raw data for DC/Mono/NK panel
 
 ```{r dcmono_rawdata}
   df<-cast(DC_MONO,Sample+Center+Method~Population+Replicate,value="Proportion")
@@ -517,6 +528,8 @@ The range of the data looks okay.
   setkey(DC_MONO,Population)
   ggplot(DC_MONO[pops[c(1:3)]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))+ggtitle("Raw DC/Mono/NK data")
 ```
+
+## Mixed Model for DC/Mono/NK Panel and tests of gating contrasts
 
 We fit the mixed model to the DC/Mono/NK panel.
 
@@ -650,7 +663,7 @@ The range of the data looks okay.
   TREG[,Replicate:=gl(nrow(.SD),1),list(Sample,Center,Population,Method)]
 ```
 
-## Mixed Model for T-reg Panel
+## Raw data for T-reg panel
 
 ```{r treg_rawdata}
   df<-cast(TREG,Sample+Center+Method~Population+Replicate,value="Proportion")
@@ -660,6 +673,8 @@ The range of the data looks okay.
   setkey(TREG,Population)
   ggplot(TREG[pops[c(1:3,5)]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))+ggtitle("Raw DC/Mono/NK data")
 ```
+
+## Mixed Model for T-reg Panel and tests of gating contrasts
 
 We fit the mixed model to the T-reg panel.
 

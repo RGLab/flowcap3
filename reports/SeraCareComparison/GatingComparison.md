@@ -230,11 +230,15 @@ ggplot(BCELL[pops[c(3, 5, 7)]]) + geom_boxplot(aes(y = Proportion, x = Center,
 ![Boxplots of log proportions for each center and cell population by subject and gating method.](figure/bcell_boxplot.png) 
 
 
+## Mixed Model for B-cell Panel
+
 How we'll model this is the following. We'll have fixed effects for gating methods, cell populations and their interactions. That is becausewe want to esimate the effec of each gating method on each population.
 
 We fit a random intercept for Sample and Center as well as for each level of Population:Center and Population:Sample. The idea here is that cell population estimates will vary from center to center and from sample to sample, by more than just a fixed offset. 
 
 We fit the reponse (proportions) on the logit scale.
+
+## Model fit and tests of gating contrasts
 
 
 ```r
@@ -590,7 +594,7 @@ TCELLS[, `:=`(Population, factor(Population))]
 ```
 
 
-## Mixed Model for T-cell Panel
+## Raw data for T-cell panel
 
 
 ```r
@@ -606,6 +610,10 @@ ggplot(TCELLS[pops[c(3, 5, 12)]]) + geom_boxplot(aes(y = Proportion, x = Center,
 ```
 
 ![plot of chunk tcell_rawdata](figure/tcell_rawdata.png) 
+
+
+
+## Mixed Model for T-cell Panel and tests of gating contrasts
 
 
 We fit the mixed model to the T-cell panel.
@@ -1013,7 +1021,7 @@ THELPER[, `:=`(Population, factor(Population))]
 ```
 
 
-## Mixed Model for T-helper panel
+## Raw data for T-helper panel 
 
 
 ```r
@@ -1029,6 +1037,9 @@ ggplot(THELPER[pops[1:3]]) + geom_boxplot(aes(y = Proportion, x = Center, fill =
 
 ![plot of chunk thelper_rawdata](figure/thelper_rawdata.png) 
 
+
+
+## Mixed Model for T-helper panel and tests of gating contrasts
 
 We fit the mixed model to the T-helper panel.
 
@@ -1347,7 +1358,7 @@ DC_MONO[, `:=`(Replicate, gl(nrow(.SD), 1)), list(Sample, Center, Population,
 ```
 
 
-## Mixed Model for DC/Mono/NK Panel
+## Raw data for DC/Mono/NK panel
 
 
 ```r
@@ -1363,6 +1374,8 @@ ggplot(DC_MONO[pops[c(1:3)]]) + geom_boxplot(aes(y = Proportion, x = Center,
 
 ![plot of chunk dcmono_rawdata](figure/dcmono_rawdata.png) 
 
+
+## Mixed Model for DC/Mono/NK Panel and tests of gating contrasts
 
 We fit the mixed model to the DC/Mono/NK panel.
 
@@ -1651,7 +1664,7 @@ TREG[, `:=`(Replicate, gl(nrow(.SD), 1)), list(Sample, Center, Population, Metho
 ```
 
 
-## Mixed Model for T-reg Panel
+## Raw data for T-reg panel
 
 
 ```r
@@ -1667,6 +1680,8 @@ ggplot(TREG[pops[c(1:3, 5)]]) + geom_boxplot(aes(y = Proportion, x = Center,
 
 ![plot of chunk treg_rawdata](figure/treg_rawdata.png) 
 
+
+## Mixed Model for T-reg Panel and tests of gating contrasts
 
 We fit the mixed model to the T-reg panel.
 
