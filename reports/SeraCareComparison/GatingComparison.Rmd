@@ -24,7 +24,7 @@ options(markdown.HTML.header = unlist(
 )
 ```
 
-```{r load_data,echo=FALSE,cache=TRUE,cache.extra=md5sum("../../data/MergedTables.rda")}
+```{r load_data,echo=FALSE,cache=FALSE,cache.extra=md5sum("../../data/MergedTables.rda")}
 load("../../data/MergedTables.rda")
 ```
  
@@ -663,4 +663,46 @@ ggplot(TREG[Population%in%c("Activated","Total Treg","Memory","Naive","Lo127Hi25
 * Interestingly, there is a global sample-to-sample shift
 * There is also population-specific sample-to-sample variation
 * Automated gating is largely unbiased for this panel
+
+
+
+# Paper Outline
+
+## Intro and Background
+
+* Motivate the need for standardized reagents and data analysis for flow cytometry in clinical trials. 
+* Review the major points from Holden and Phil's previous papers, and the first FlowCAP paper. 
+* By bringing together assay standardization efforts and automated gating methods we aim to improve reproducibility and decrease variability and bias.
+
+## Results to present
+* Should the first figure show the staining panels and central gating (dotplots) of each panel? Perhaps this is too much page real-estate. Should we just show one or two panels, and the rest in supplementary materials? 
+  * Or, do we want to just show the staining panels (reagents) and gating hierarchies, and refer to supplementary materials for centralized gating dotplots. Then we can show specific examples / dotplots comparing centralized and autoamed gating later as necessary.
+* Results of centralized vs local gating for Cytotrol data showing that centralized gating decreases variablity.
+* Automated gating of Cytotrols showing..
+* We at least can reproduce B-cell and T-cell gating in an unbiased manner and with low variablitity compared to central gating.
+* SeraCare centralized gating vs automated gating results showing that, at least for some panels:
+  * Automated gating is unbiased relative to manual gating
+  * Variability is as low or lower than manual gating (decrease in CV)
+  * Even when biased, the bias is associated with populations that have low cell counts (to be shown), and even then, CV is lower than manual gating.
+  * Show examples of manual gates and automated gates where automated gating improves upon the manual gating
+  * Show examples where automated gating is biased, but the gates may still be reasonable. The idea is that the interpretation of the gating is subjective, but it is at least reproducible and data driven in the autoamted gating case.
+  * Show what the sources of variability are for the different panels. 
+    * i.e. most of the variablity is sample-to-sample biological variability for the B-cell and T-cell and T-reg panels. 
+    * Center-to-center variability dominates for the DC/Mono/Nk panel, and within-replicate variability dominates for the T-helper panel.
+* Power analysis for each panel. What is the effect size we expect to detect if we use these approaches.
+* Can we point to some specific examples (perhaps in the DC/Mono/NK panel where center-to-center variability dominates) where not following SOPs was the cause of the large variability.
+
+### Note that some of the above will certainly reside in the supplementary materials. 
+
+## Discussion
+* What do we gain from:
+  * standardizing reagents? 
+  * centralized analysis?
+  * autoamted gating?
+* T-helper panel was not really successful, need to discuss why or we exclude it. To be decided.
+* What is the impact of the bias we do observe. Is it significant enough to be troublesome, or can we say that the gates are actually reasonable enough and the centralized gating is really succeptible to the same subjectivity as local gating, thus we can trust the automated methods.
+* Mention where the tools can be found.
+* Discuss what is the impact of following/not following S.O.Ps when running a cross-center trial. 
+* Suggest some best practices for using these reagents and tools. Can refer to power analysis, etc.
+
 

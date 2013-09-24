@@ -25,29 +25,21 @@ summary(BCELL)
 
 ```
 ##    Sample         Center                       File            Population 
-##  12828:504   Baylor  :216   1228-1_C1_C01.fcs    :  24   Lymphocytes:189  
-##  1349 :504   CIMR    :216   1228-2_C2_C02.fcs    :  24   CD19       :189  
-##  1369 :504   Miami   :216   1228-3_C3_C03.fcs    :  24   CD20       :189  
-##              NHLBI   :216   12828_1_B CELL.fcs   :  24   Naive      :189  
-##              Stanford:216   12828_1_Bcell_C01.fcs:  24   Memory IgD+:189  
-##              UCLA    :216   12828_2_B CELL.fcs   :  24   Memory IgD-:189  
-##              Yale    :216   (Other)              :1368   (Other)    :378  
-##    Proportion             Method      Replicate       lp        
-##  Min.   :0.0069   Manual     :504   Min.   :1   Min.   :-4.966  
-##  1st Qu.:0.0836   flowDensity:504   1st Qu.:1   1st Qu.:-2.394  
-##  Median :0.1600   OpenCyto   :504   Median :2   Median :-1.658  
-##  Mean   :0.2889                     Mean   :2   Mean   :-0.902  
-##  3rd Qu.:0.4754                     3rd Qu.:3   3rd Qu.:-0.099  
-##  Max.   :1.0000                     Max.   :3   Max.   :11.513  
-##                                                                 
-##       logp       
-##  Min.   :-4.975  
-##  1st Qu.:-2.482  
-##  Median :-1.833  
-##  Mean   :-1.736  
-##  3rd Qu.:-0.744  
-##  Max.   : 0.000  
-## 
+##  12828:552   Baylor  :225   1228-1_C1_C01.fcs    :  25   Lymphocytes:198  
+##  1349 :552   CIMR    :225   1228-2_C2_C02.fcs    :  25   CD19       :198  
+##  1369 :552   Miami   :225   1228-3_C3_C03.fcs    :  25   CD20       :198  
+##              NHLBI   :225   12828_1_B CELL.fcs   :  25   Naive      :198  
+##              Stanford:225   12828_1_Bcell_C01.fcs:  25   Memory IgD+:198  
+##              UCLA    :225   (Other)              :1450   (Other)    :594  
+##              Yale    :306   NA's                 :  81   NA's       : 72  
+##    Proportion             Method   
+##  Min.   :  0.01   Manual     :648  
+##  1st Qu.:  0.09   flowDensity:504  
+##  Median :  0.17   OpenCyto   :504  
+##  Mean   :  2.63                    
+##  3rd Qu.:  0.56                    
+##  Max.   :128.28                    
+##  NA's   :72
 ```
 
 
@@ -59,11 +51,8 @@ unique(BCELL[is.na(Proportion), list(Center, File, Method)])
 ```
 
 ```
-## Empty data.table (0 rows) of 3 cols: Center,File,Method
-```
-
-```
-## NULL
+##    Center File Method
+## 1:   Yale   NA Manual
 ```
 
 ```r
@@ -71,11 +60,14 @@ unique(BCELL[Proportion > 1, list(Center, Population, Method)])
 ```
 
 ```
-## Empty data.table (0 rows) of 3 cols: Center,Population,Method
-```
-
-```
-## NULL
+##      Center Population Method
+## 1:   Baylor         NA Manual
+## 2:     CIMR         NA Manual
+## 3:    Miami         NA Manual
+## 4:    NHLBI         NA Manual
+## 5: Stanford         NA Manual
+## 6:     UCLA         NA Manual
+## 7:     Yale         NA Manual
 ```
 
 
@@ -158,29 +150,29 @@ BCELL[, `:=`(Replicate, gl(nrow(.SD), 1)), list(Sample, Center, Population,
 
 ```
 ##       Sample Center                    File   Population Proportion
-##    1:  12828 Baylor      12828_1_B CELL.fcs  Lymphocytes     0.4940
-##    2:  12828 Baylor      12828_2_B CELL.fcs  Lymphocytes     0.4840
-##    3:  12828 Baylor      12828_3_B CELL.fcs  Lymphocytes     0.4840
-##    4:  12828   CIMR     B_CELL_12828_P1.fcs  Lymphocytes     0.4390
-##    5:  12828   CIMR B_CELL_12828_001_P1.fcs  Lymphocytes     0.4440
+##    1:  12828 Baylor      12828_1_B CELL.fcs  Lymphocytes    0.49400
+##    2:  12828 Baylor      12828_2_B CELL.fcs  Lymphocytes    0.48400
+##    3:  12828 Baylor      12828_3_B CELL.fcs  Lymphocytes    0.48400
+##    4:  12828   CIMR     B_CELL_12828_P1.fcs  Lymphocytes    0.43900
+##    5:  12828   CIMR B_CELL_12828_001_P1.fcs  Lymphocytes    0.44400
 ##   ---                                                              
-## 1508:   1349  Miami     lot 1349_C5_C05.fcs Plasmablasts     0.2453
-## 1509:   1349  Miami     lot 1349_C6_C06.fcs Plasmablasts     0.4194
-## 1510:   1369  Miami     lot 1369_C7_C07.fcs Plasmablasts     0.4400
-## 1511:   1369  Miami     lot 1369_C8_C08.fcs Plasmablasts     0.4667
-## 1512:   1369  Miami     lot 1369_C9_C09.fcs Plasmablasts     0.5000
-##         Method Replicate       lp    logp
-##    1:   Manual         1 -0.02400 -0.7052
-##    2:   Manual         2 -0.06402 -0.7257
-##    3:   Manual         3 -0.06402 -0.7257
-##    4:   Manual         1 -0.24522 -0.8233
-##    5:   Manual         2 -0.22494 -0.8119
-##   ---                                    
-## 1508: OpenCyto         2 -1.12390 -1.4053
-## 1509: OpenCyto         3 -0.32542 -0.8690
-## 1510: OpenCyto         1 -0.24116 -0.8210
-## 1511: OpenCyto         2 -0.13353 -0.7621
-## 1512: OpenCyto         3  0.00000 -0.6931
+## 1508:   1369  Miami     lot 1369_C9_C09.fcs  Memory IgD+    0.16136
+## 1509:   1369  Miami     lot 1369_C9_C09.fcs Transitional    0.05231
+## 1510:   1369  Miami     lot 1369_C9_C09.fcs         CD20    0.12175
+## 1511:   1369  Miami     lot 1369_C9_C09.fcs         CD19    0.11885
+## 1512:   1369  Miami     lot 1369_C9_C09.fcs  Lymphocytes    1.00000
+##         Method Replicate
+##    1:   Manual         1
+##    2:   Manual         2
+##    3:   Manual         3
+##    4:   Manual         1
+##    5:   Manual         2
+##   ---                   
+## 1508: OpenCyto         3
+## 1509: OpenCyto         3
+## 1510: OpenCyto         3
+## 1511: OpenCyto         3
+## 1512: OpenCyto         3
 ```
 
 
@@ -252,30 +244,22 @@ We note several things:
 
 
 ```
-##    Sample         Center                       File     
-##  1349 :756   Baylor  :378   1228-1_A1_A01.fcs    :  42  
-##  1369 :756   CIMR    :  0   1228-2_A2_A02.fcs    :  42  
-##  12828:756   Miami   :378   1228-3_A3_A03.fcs    :  42  
-##              NHLBI   :378   12828_1_A1_A01.fcs   :  42  
-##              Stanford:378   12828_1_T CELL.fcs   :  42  
-##              UCLA    :378   12828_1_Tcell_A01.fcs:  42  
-##              Yale    :378   (Other)              :2016  
-##               Population     Proportion             Method      Replicate
-##  Lymphocytes       : 162   Min.   :0.0004   Manual     :756   Min.   :1  
-##  CD3               : 162   1st Qu.:0.0579   flowDensity:756   1st Qu.:1  
-##  CD4               : 162   Median :0.3061   OpenCyto   :756   Median :2  
-##  CD4 Activated     : 162   Mean   :0.3084                     Mean   :2  
-##  CD4 Naive         : 162   3rd Qu.:0.4622                     3rd Qu.:3  
-##  CD4 Central Memory: 162   Max.   :1.0000                     Max.   :3  
-##  (Other)           :1296                                                 
-##        lp              logp       
-##  Min.   :-7.788   Min.   :-7.813  
-##  1st Qu.:-2.789   1st Qu.:-2.849  
-##  Median :-0.819   Median :-1.184  
-##  Mean   :-1.144   Mean   :-1.814  
-##  3rd Qu.:-0.152   3rd Qu.:-0.772  
-##  Max.   :11.513   Max.   : 0.000  
-## 
+##    Sample         Center                    File     
+##  1349 :882   Baylor  :378   1228-1_A1_A01.fcs :  42  
+##  1369 :840   CIMR    :252   1228-2_A2_A02.fcs :  42  
+##  12828:882   Miami   :378   1228-3_A3_A03.fcs :  42  
+##              NHLBI   :378   12828_1_A1_A01.fcs:  42  
+##              Stanford:378   12828_1_T CELL.fcs:  42  
+##              UCLA    :378   (Other)           :2310  
+##              Yale    :462   NA's              :  84  
+##               Population     Proportion           Method   
+##  Lymphocytes       : 186   Min.   :0.00   Manual     :966  
+##  CD3               : 186   1st Qu.:0.06   flowDensity:882  
+##  CD4               : 186   Median :0.31   OpenCyto   :756  
+##  CD4 Activated     : 186   Mean   :0.31                    
+##  CD4 Naive         : 186   3rd Qu.:0.46                    
+##  CD4 Central Memory: 186   Max.   :1.00                    
+##  (Other)           :1488   NA's   :84
 ```
 
 
@@ -314,37 +298,37 @@ kable(cast(m, Method ~ Population), format = "html", table.attr = "id=\"tcell_ba
 <tbody>
   <tr>
    <td> Manual </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
   </tr>
   <tr>
    <td> flowDensity </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
-   <td> 54 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
   </tr>
   <tr>
    <td> OpenCyto </td>
@@ -383,6 +367,7 @@ kable(cast(m, Method ~ Center), format = "html", table.attr = "id=\"tcell_center
   <tr>
    <th>   </th>
    <th> Baylor </th>
+   <th> CIMR </th>
    <th> Miami </th>
    <th> NHLBI </th>
    <th> Stanford </th>
@@ -399,9 +384,11 @@ kable(cast(m, Method ~ Center), format = "html", table.attr = "id=\"tcell_center
    <td> 126 </td>
    <td> 126 </td>
    <td> 126 </td>
+   <td> 126 </td>
   </tr>
   <tr>
    <td> flowDensity </td>
+   <td> 126 </td>
    <td> 126 </td>
    <td> 126 </td>
    <td> 126 </td>
@@ -412,6 +399,7 @@ kable(cast(m, Method ~ Center), format = "html", table.attr = "id=\"tcell_center
   <tr>
    <td> OpenCyto </td>
    <td> 126 </td>
+   <td>   0 </td>
    <td> 126 </td>
    <td> 126 </td>
    <td> 126 </td>
@@ -449,30 +437,30 @@ TCELLS[, `:=`(Replicate, gl(nrow(.SD), 1)), list(Sample, Center, Population,
 ```
 
 ```
-##       Sample Center                     File   Population Proportion
-##    1:  12828 Baylor       12828_1_T CELL.fcs  Lymphocytes    0.23800
-##    2:  12828 Baylor       12828_2_T CELL.fcs  Lymphocytes    0.49100
-##    3:  12828 Baylor       12828_3_T CELL.fcs  Lymphocytes    0.48100
-##    4:  12828  Miami     lot 12828_A1_A01.fcs  Lymphocytes    0.61500
-##    5:  12828  Miami     lot 12828_A2_A02.fcs  Lymphocytes    0.55700
-##   ---                                                               
-## 2264:   1349   UCLA TCELL 22013_1349_002.fcs CD8 Effector    0.16178
-## 2265:   1349   UCLA TCELL 22013_1349_003.fcs CD8 Effector    0.15292
-## 2266:   1369   UCLA TCELL 22013_1369_001.fcs CD8 Effector    0.05122
-## 2267:   1369   UCLA TCELL 22013_1369_002.fcs CD8 Effector    0.05292
-## 2268:   1369   UCLA TCELL 22013_1369_003.fcs CD8 Effector    0.07474
-##         Method Replicate       lp    logp
-##    1:   Manual         1 -1.16365 -1.4355
-##    2:   Manual         2 -0.03600 -0.7113
-##    3:   Manual         3 -0.07604 -0.7319
-##    4:   Manual         1  0.46837 -0.4861
-##    5:   Manual         2  0.22899 -0.5852
-##   ---                                    
-## 2264: OpenCyto         2 -1.64499 -1.8215
-## 2265: OpenCyto         3 -1.71186 -1.8779
-## 2266: OpenCyto         1 -2.91892 -2.9717
-## 2267: OpenCyto         2 -2.88437 -2.9389
-## 2268: OpenCyto         3 -2.51596 -2.5938
+##       Sample Center                     File         Population Proportion
+##    1:  12828 Baylor       12828_1_T CELL.fcs        Lymphocytes     0.2380
+##    2:  12828 Baylor       12828_2_T CELL.fcs        Lymphocytes     0.4910
+##    3:  12828 Baylor       12828_3_T CELL.fcs        Lymphocytes     0.4810
+##    4:  12828  Miami     lot 12828_A1_A01.fcs        Lymphocytes     0.6150
+##    5:  12828  Miami     lot 12828_A2_A02.fcs        Lymphocytes     0.5570
+##   ---                                                                     
+## 2516:   1369   UCLA TCELL 22013_1369_003.fcs                CD3     0.7348
+## 2517:   1369   UCLA TCELL 22013_1369_003.fcs                CD4     0.6855
+## 2518:   1369   UCLA TCELL 22013_1369_003.fcs CD4 Central Memory     0.4022
+## 2519:   1369   UCLA TCELL 22013_1369_003.fcs CD8 Central Memory     0.1708
+## 2520:   1369   UCLA TCELL 22013_1369_003.fcs        Lymphocytes     1.0000
+##         Method Replicate
+##    1:   Manual         1
+##    2:   Manual         2
+##    3:   Manual         3
+##    4:   Manual         1
+##    5:   Manual         2
+##   ---                   
+## 2516: OpenCyto         3
+## 2517: OpenCyto         3
+## 2518: OpenCyto         3
+## 2519: OpenCyto         3
+## 2520: OpenCyto         3
 ```
 
 
@@ -536,29 +524,21 @@ A couple of the CD8 populations exhibit some bias, but again, they are more cons
 
 ```
 ##    Sample         Center                            File     
-##  1349 :504   Baylor  :216   1228-1_E1_E01.fcs         :  24  
-##  1369 :504   CIMR    :216   1228-2_E2_E02.fcs         :  24  
-##  12828:504   Miami   :216   1228-3_E3_E03.fcs         :  24  
-##              NHLBI   :216   12828_1_E1_E01.fcs        :  24  
-##              Stanford:216   12828_1_TH1,2f,2,2f,17.fcs:  24  
-##              UCLA    :216   12828_1_Thelper_E01.fcs   :  24  
-##              Yale    :216   (Other)                   :1368  
-##          Population    Proportion             Method      Replicate
-##  CD4 Activated:189   Min.   :0.0001   Manual     :504   Min.   :1  
-##  CD4 Th1      :189   1st Qu.:0.0181   flowDensity:504   1st Qu.:1  
-##  CD4 Th2      :189   Median :0.0478   OpenCyto   :504   Median :2  
-##  CD4 Th17     :189   Mean   :0.2511                     Mean   :2  
-##  CD8 Activated:189   3rd Qu.:0.4678                     3rd Qu.:3  
-##  CD8 Th1      :189   Max.   :0.9984                     Max.   :3  
-##  (Other)      :378                                                 
-##        lp              logp       
-##  Min.   :-9.044   Min.   :-9.132  
-##  1st Qu.:-3.991   1st Qu.:-4.010  
-##  Median :-2.992   Median :-3.041  
-##  Mean   :-2.125   Mean   :-2.666  
-##  3rd Qu.:-0.129   3rd Qu.:-0.760  
-##  Max.   : 6.449   Max.   :-0.002  
-## 
+##  1349 :759   Baylor  :315   1228-1_E1_E01.fcs         :  35  
+##  1369 :735   CIMR    :315   1228-2_E2_E02.fcs         :  35  
+##  12828:759   Miami   :315   1228-3_E3_E03.fcs         :  35  
+##              NHLBI   :315   12828_1_E1_E01.fcs        :  35  
+##              Stanford:315   12828_1_TH1,2f,2,2f,17.fcs:  35  
+##              UCLA    :315   (Other)                   :2030  
+##              Yale    :363   NA's                      :  48  
+##          Population     Proportion           Method   
+##  CD3          : 193   Min.   :0.00   Manual     :804  
+##  CD4          : 193   1st Qu.:0.03   flowDensity:756  
+##  CD4 Activated: 193   Median :0.24   OpenCyto   :693  
+##  CD4 Th1      : 193   Mean   :0.34                    
+##  CD4 Th2      : 193   3rd Qu.:0.62                    
+##  CD4 Th17     : 193   Max.   :1.00                    
+##  (Other)      :1095   NA's   :48
 ```
 
 
@@ -775,29 +755,29 @@ THELPER[, `:=`(Replicate, gl(nrow(.SD), 1)), list(Sample, Center, Population,
 
 ```
 ##       Sample Center                          File    Population Proportion
-##    1:  12828 Baylor    12828_1_TH1,2f,2,2f,17.fcs CD4 Activated  0.0275000
-##    2:  12828 Baylor    12828_2_TH1,2f,2,2f,17.fcs CD4 Activated  0.0317000
-##    3:  12828 Baylor    12828_3_TH1,2f,2,2f,17.fcs CD4 Activated  0.0309000
-##    4:  12828   CIMR     TH1_TH2_TH17_12828_P1.fcs CD4 Activated  0.0150000
-##    5:  12828   CIMR TH1_TH2_TH17_12828_001_P1.fcs CD4 Activated  0.0142000
+##    1:  12828 Baylor    12828_1_TH1,2f,2,2f,17.fcs CD4 Activated   0.027500
+##    2:  12828 Baylor    12828_2_TH1,2f,2,2f,17.fcs CD4 Activated   0.031700
+##    3:  12828 Baylor    12828_3_TH1,2f,2,2f,17.fcs CD4 Activated   0.030900
+##    4:  12828   CIMR     TH1_TH2_TH17_12828_P1.fcs CD4 Activated   0.015000
+##    5:  12828   CIMR TH1_TH2_TH17_12828_001_P1.fcs CD4 Activated   0.014200
 ##   ---                                                                     
-## 1508:   1349   CIMR  TH1_TH2_TH17_1349_002_P1.fcs      CD8 Th17  0.0003786
-## 1509:   1349   CIMR      TH1_TH2_TH17_1349_P1.fcs      CD8 Th17  0.0003435
-## 1510:   1369   CIMR  TH1_TH2_TH17_1369_001_P1.fcs      CD8 Th17  0.0046840
-## 1511:   1369   CIMR  TH1_TH2_TH17_1369_002_P1.fcs      CD8 Th17  0.0050342
-## 1512:   1369   CIMR      TH1_TH2_TH17_1369_P1.fcs      CD8 Th17  0.0025063
-##         Method Replicate     lp   logp
-##    1:   Manual         1 -3.565 -3.594
-##    2:   Manual         2 -3.419 -3.451
-##    3:   Manual         3 -3.445 -3.477
-##    4:   Manual         1 -4.184 -4.200
-##    5:   Manual         2 -4.240 -4.255
-##   ---                                 
-## 1508: OpenCyto         2 -7.853 -7.879
-## 1509: OpenCyto         3 -7.947 -7.976
-## 1510: OpenCyto         1 -5.357 -5.364
-## 1511: OpenCyto         2 -5.284 -5.292
-## 1512: OpenCyto         3 -5.982 -5.989
+## 1508:   1369   CIMR      TH1_TH2_TH17_1369_P1.fcs       CD4 Th2   0.989839
+## 1509:   1369   CIMR      TH1_TH2_TH17_1369_P1.fcs       CD8 Th2   0.988185
+## 1510:   1369   CIMR      TH1_TH2_TH17_1369_P1.fcs CD8 Activated   0.008951
+## 1511:   1369   CIMR      TH1_TH2_TH17_1369_P1.fcs       CD4 Th1   0.004198
+## 1512:   1369   CIMR      TH1_TH2_TH17_1369_P1.fcs       CD8 Th1   0.007966
+##         Method Replicate
+##    1:   Manual         1
+##    2:   Manual         2
+##    3:   Manual         3
+##    4:   Manual         1
+##    5:   Manual         2
+##   ---                   
+## 1508: OpenCyto         3
+## 1509: OpenCyto         3
+## 1510: OpenCyto         3
+## 1511: OpenCyto         3
+## 1512: OpenCyto         3
 ```
 
 
@@ -860,30 +840,22 @@ The T-helper panel seems to have failed, as we have a lot of bias in the Th1 and
 
 
 ```
-##    Sample         Center                              File     
-##  1349 :441   Baylor  :189   1228-1_D1_D01.fcs           :  21  
-##  1369 :441   CIMR    :189   1228-2_D2_D02.fcs           :  21  
-##  12828:441   Miami   :189   1228-3_D3_D03.fcs           :  21  
-##              NHLBI   :189   12828_1_D1_D01.fcs          :  21  
-##              Stanford:189   12828_1_DC,2f,MONO,2f,NK.fcs:  21  
-##              UCLA    :189   12828_1_DcMonNk_D01.fcs     :  21  
-##              Yale    :189   (Other)                     :1197  
-##          Population    Proportion             Method      Replicate
-##  CD14+CD16+   :189   Min.   :0.0009   Manual     :441   Min.   :1  
-##  CD14-Lineage-:189   1st Qu.:0.0958   flowDensity:441   1st Qu.:1  
-##  CD16+CD56+   :189   Median :0.2122   OpenCyto   :441   Median :2  
-##  CD16+CD56-   :189   Mean   :0.2844                     Mean   :2  
-##  HLADR+       :189   3rd Qu.:0.4610                     3rd Qu.:3  
-##  CD11c-CD123+ :189   Max.   :0.8980                     Max.   :3  
-##  CD11c+CD123- :189                                                 
-##        lp              logp       
-##  Min.   :-6.958   Min.   :-6.970  
-##  1st Qu.:-2.245   1st Qu.:-2.346  
-##  Median :-1.312   Median :-1.550  
-##  Mean   :-1.399   Mean   :-1.810  
-##  3rd Qu.:-0.156   3rd Qu.:-0.774  
-##  Max.   : 2.176   Max.   :-0.108  
-## 
+##    Sample         Center                    File              Population 
+##  1349 :545   Baylor  :225   12828_3_D3_D03.fcs:  45   CD14+CD16+   :193  
+##  1369 :525   CIMR    :225   1349_3_D6_D06.fcs :  45   CD14-Lineage-:193  
+##  12828:545   Miami   :225   1228-1_D1_D01.fcs :  25   CD16+CD56+   :193  
+##              NHLBI   :225   1228-2_D2_D02.fcs :  25   CD16+CD56-   :193  
+##              Stanford:225   1228-3_D3_D03.fcs :  25   HLADR+       :193  
+##              UCLA    :225   12828_1_D1_D01.fcs:  25   CD11c-CD123+ :193  
+##              Yale    :265   (Other)           :1425   (Other)      :457  
+##    Proportion           Method   
+##  Min.   :0.00   Manual     :670  
+##  1st Qu.:0.11   flowDensity:504  
+##  Median :0.26   OpenCyto   :441  
+##  Mean   :0.33                    
+##  3rd Qu.:0.50                    
+##  Max.   :0.99                    
+##  NA's   :40
 ```
 
 
@@ -903,7 +875,10 @@ kable(cast(m, Method ~ Population), format = "html", table.attr = "id=\"dcmono_b
  <thead>
   <tr>
    <th>   </th>
+   <th> Monocytes </th>
+   <th> CD14-Lineage+ </th>
    <th> CD14+CD16+ </th>
+   <th> CD14+CD16- </th>
    <th> CD14-Lineage- </th>
    <th> CD16+CD56+ </th>
    <th> CD16+CD56- </th>
@@ -922,10 +897,16 @@ kable(cast(m, Method ~ Population), format = "html", table.attr = "id=\"dcmono_b
    <td> 63 </td>
    <td> 63 </td>
    <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
   </tr>
   <tr>
    <td> flowDensity </td>
    <td> 63 </td>
+   <td>  0 </td>
+   <td> 63 </td>
+   <td>  0 </td>
    <td> 63 </td>
    <td> 63 </td>
    <td> 63 </td>
@@ -935,7 +916,10 @@ kable(cast(m, Method ~ Population), format = "html", table.attr = "id=\"dcmono_b
   </tr>
   <tr>
    <td> OpenCyto </td>
+   <td>  0 </td>
+   <td>  0 </td>
    <td> 63 </td>
+   <td>  0 </td>
    <td> 63 </td>
    <td> 63 </td>
    <td> 63 </td>
@@ -975,23 +959,23 @@ kable(cast(m, Method ~ Center), format = "html", table.attr = "id=\"dcmono_cente
 <tbody>
   <tr>
    <td> Manual </td>
-   <td> 63 </td>
-   <td> 63 </td>
-   <td> 63 </td>
-   <td> 63 </td>
-   <td> 63 </td>
-   <td> 63 </td>
-   <td> 63 </td>
+   <td> 90 </td>
+   <td> 90 </td>
+   <td> 90 </td>
+   <td> 90 </td>
+   <td> 90 </td>
+   <td> 90 </td>
+   <td> 90 </td>
   </tr>
   <tr>
    <td> flowDensity </td>
-   <td> 63 </td>
-   <td> 63 </td>
-   <td> 63 </td>
-   <td> 63 </td>
-   <td> 63 </td>
-   <td> 63 </td>
-   <td> 63 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
   </tr>
   <tr>
    <td> OpenCyto </td>
@@ -1040,30 +1024,30 @@ DC_MONO[, `:=`(Replicate, gl(nrow(.SD), 1)), list(Sample, Center, Population,
 ```
 
 ```
-##       Sample Center                         File   Population Proportion
-##    1:  12828 Baylor 12828_1_DC,2f,MONO,2f,NK.fcs   CD14+CD16+    0.01370
-##    2:  12828 Baylor 12828_2_DC,2f,MONO,2f,NK.fcs   CD14+CD16+    0.01140
-##    3:  12828 Baylor 12828_3_DC,2f,MONO,2f,NK.fcs   CD14+CD16+    0.01180
-##    4:  12828   CIMR      DC_MONO_NK_12828001.fcs   CD14+CD16+    0.02380
-##    5:  12828   CIMR  DC_MONO_NK_12828001_001.fcs   CD14+CD16+    0.02530
-##   ---                                                                   
-## 1319:   1349  Miami          lot 1349_D5_D05.fcs CD11c+CD123-    0.16847
-## 1320:   1349  Miami          lot 1349_D6_D06.fcs CD11c+CD123-    0.22340
-## 1321:   1369  Miami          lot 1369_D7_D07.fcs CD11c+CD123-    0.11797
-## 1322:   1369  Miami          lot 1369_D8_D08.fcs CD11c+CD123-    0.11240
-## 1323:   1369  Miami          lot 1369_D9_D09.fcs CD11c+CD123-    0.08522
-##         Method Replicate     lp   logp
-##    1:   Manual         1 -4.276 -4.290
-##    2:   Manual         2 -4.462 -4.474
-##    3:   Manual         3 -4.427 -4.440
-##    4:   Manual         1 -3.714 -3.738
-##    5:   Manual         2 -3.651 -3.677
-##   ---                                 
-## 1319: OpenCyto         2 -1.596 -1.781
-## 1320: OpenCyto         3 -1.246 -1.499
-## 1321: OpenCyto         1 -2.012 -2.137
-## 1322: OpenCyto         2 -2.066 -2.186
-## 1323: OpenCyto         3 -2.373 -2.463
+##       Sample Center                         File    Population Proportion
+##    1:  12828 Baylor 12828_1_DC,2f,MONO,2f,NK.fcs    CD14+CD16+    0.01370
+##    2:  12828 Baylor 12828_2_DC,2f,MONO,2f,NK.fcs    CD14+CD16+    0.01140
+##    3:  12828 Baylor 12828_3_DC,2f,MONO,2f,NK.fcs    CD14+CD16+    0.01180
+##    4:  12828   CIMR      DC_MONO_NK_12828001.fcs    CD14+CD16+    0.02380
+##    5:  12828   CIMR  DC_MONO_NK_12828001_001.fcs    CD14+CD16+    0.02530
+##   ---                                                                    
+## 1319:   1369  Miami          lot 1369_D9_D09.fcs    CD14+CD16+    0.01101
+## 1320:   1369  Miami          lot 1369_D9_D09.fcs        HLADR+    0.53364
+## 1321:   1369  Miami          lot 1369_D9_D09.fcs  CD11c-CD123+    0.63739
+## 1322:   1369  Miami          lot 1369_D9_D09.fcs  CD11c+CD123-    0.08522
+## 1323:   1369  Miami          lot 1369_D9_D09.fcs CD14-Lineage-    0.12519
+##         Method Replicate
+##    1:   Manual         1
+##    2:   Manual         2
+##    3:   Manual         3
+##    4:   Manual         1
+##    5:   Manual         2
+##   ---                   
+## 1319: OpenCyto         3
+## 1320: OpenCyto         3
+## 1321: OpenCyto         3
+## 1322: OpenCyto         3
+## 1323: OpenCyto         3
 ```
 
 
@@ -1125,30 +1109,22 @@ mer <- lmer(lp ~ Population * Method + (1 | Center/Population) + (1 | Sample/Pop
 
 
 ```
-##    Sample         Center                     File          Population 
-##  1349 :210   Baylor  :90   1228-1_B1_B01.fcs   : 10   Lo127Hi25 :126  
-##  1369 :210   CIMR    :90   1228-2_B2_B02.fcs   : 10   Naive     :126  
-##  12828:210   Miami   :90   1228-3_B3_B03.fcs   : 10   Memory    :126  
-##              NHLBI   :90   12828_1_B1_B01.fcs  : 10   Total Treg:126  
-##              Stanford:90   12828_1_T REG.fcs   : 10   Activated :126  
-##              UCLA    :90   12828_1_Treg_B01.fcs: 10                   
-##              Yale    :90   (Other)             :570                   
-##    Proportion           Method      Replicate       lp       
-##  Min.   :0.00034   Manual  :315   Min.   :1   Min.   :-7.95  
-##  1st Qu.:0.00845   OpenCyto:315   1st Qu.:1   1st Qu.:-4.76  
-##  Median :0.03289                  Median :2   Median :-3.38  
-##  Mean   :0.04084                  Mean   :2   Mean   :-3.79  
-##  3rd Qu.:0.06271                  3rd Qu.:3   3rd Qu.:-2.70  
-##  Max.   :0.17197                  Max.   :3   Max.   :-1.57  
-##                                                              
-##       logp      
-##  Min.   :-7.98  
-##  1st Qu.:-4.77  
-##  Median :-3.42  
-##  Mean   :-3.83  
-##  3rd Qu.:-2.77  
-##  Max.   :-1.76  
-## 
+##    Sample         Center                    File           Population 
+##  1349 :352   Baylor  :144   1228-1_B1_B01.fcs : 16   Lymphocytes:132  
+##  1369 :344   CIMR    :144   1228-2_B2_B02.fcs : 16   CD3        :132  
+##  12828:360   Miami   :144   1228-3_B3_B03.fcs : 16   CD4        :132  
+##              NHLBI   :144   12828_1_B1_B01.fcs: 16   Lo127Hi25  :132  
+##              Stanford:144   12828_1_T REG.fcs : 16   Naive      :132  
+##              UCLA    :144   (Other)           :928   Memory     :132  
+##              Yale    :192   NA's              : 48   (Other)    :264  
+##    Proportion        Method   
+##  Min.   :0.00   Manual  :552  
+##  1st Qu.:0.02   OpenCyto:504  
+##  Median :0.07                 
+##  Mean   :0.27                 
+##  3rd Qu.:0.55                 
+##  Max.   :1.00                 
+##  NA's   :48
 ```
 
 
@@ -1168,6 +1144,9 @@ kable(cast(m, Method ~ Population), format = "html", table.attr = "id=\"treg_bal
  <thead>
   <tr>
    <th>   </th>
+   <th> Lymphocytes </th>
+   <th> CD3 </th>
+   <th> CD4 </th>
    <th> Lo127Hi25 </th>
    <th> Naive </th>
    <th> Memory </th>
@@ -1183,9 +1162,15 @@ kable(cast(m, Method ~ Population), format = "html", table.attr = "id=\"treg_bal
    <td> 63 </td>
    <td> 63 </td>
    <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
   </tr>
   <tr>
    <td> OpenCyto </td>
+   <td> 63 </td>
+   <td> 63 </td>
+   <td> 63 </td>
    <td> 63 </td>
    <td> 63 </td>
    <td> 63 </td>
@@ -1224,23 +1209,23 @@ kable(cast(m, Method ~ Center), format = "html", table.attr = "id=\"treg_centers
 <tbody>
   <tr>
    <td> Manual </td>
-   <td> 45 </td>
-   <td> 45 </td>
-   <td> 45 </td>
-   <td> 45 </td>
-   <td> 45 </td>
-   <td> 45 </td>
-   <td> 45 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
   </tr>
   <tr>
    <td> OpenCyto </td>
-   <td> 45 </td>
-   <td> 45 </td>
-   <td> 45 </td>
-   <td> 45 </td>
-   <td> 45 </td>
-   <td> 45 </td>
-   <td> 45 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
+   <td> 72 </td>
   </tr>
 </tbody>
 </table>
@@ -1288,23 +1273,23 @@ TREG[, `:=`(Replicate, gl(nrow(.SD), 1)), list(Sample, Center, Population, Metho
 ##   4:  12828   CIMR     TREG_12828_P1.fcs  Lo127Hi25   0.113000   Manual
 ##   5:  12828   CIMR TREG_12828_001_P1.fcs  Lo127Hi25   0.109000   Manual
 ##  ---                                                                   
-## 626:   1349   CIMR  TREG_1349_002_P1.fcs  Activated   0.008380 OpenCyto
-## 627:   1349   CIMR      TREG_1349_P1.fcs  Activated   0.008672 OpenCyto
-## 628:   1369   CIMR  TREG_1369_001_P1.fcs  Activated   0.000958 OpenCyto
-## 629:   1369   CIMR  TREG_1369_002_P1.fcs  Activated   0.001086 OpenCyto
-## 630:   1369   CIMR      TREG_1369_P1.fcs  Activated   0.000618 OpenCyto
-##      Replicate     lp   logp
-##   1:         1 -1.892 -2.033
-##   2:         2 -1.928 -2.064
-##   3:         3 -1.901 -2.040
-##   4:         1 -2.060 -2.180
-##   5:         2 -2.101 -2.216
-##  ---                        
-## 626:         2 -4.772 -4.782
-## 627:         3 -4.738 -4.748
-## 628:         1 -6.939 -6.951
-## 629:         2 -6.815 -6.825
-## 630:         3 -7.372 -7.389
+## 626:   1369   CIMR      TREG_1369_P1.fcs     Memory   0.015142 OpenCyto
+## 627:   1369   CIMR      TREG_1369_P1.fcs  Lo127Hi25   0.055210 OpenCyto
+## 628:   1369   CIMR      TREG_1369_P1.fcs      Naive   0.002060 OpenCyto
+## 629:   1369   CIMR      TREG_1369_P1.fcs  Activated   0.000618 OpenCyto
+## 630:   1369   CIMR      TREG_1369_P1.fcs Total Treg   0.017202 OpenCyto
+##      Replicate
+##   1:         1
+##   2:         2
+##   3:         3
+##   4:         1
+##   5:         2
+##  ---          
+## 626:         3
+## 627:         3
+## 628:         3
+## 629:         3
+## 630:         3
 ```
 
 
@@ -1364,4 +1349,46 @@ mer <- lmer(lp ~ Population * Method + (1 | Center/Population) + (1 | Sample/Pop
 * Interestingly, there is a global sample-to-sample shift
 * There is also population-specific sample-to-sample variation
 * Automated gating is largely unbiased for this panel
+
+
+
+# Paper Outline
+
+## Intro and Background
+
+* Motivate the need for standardized reagents and data analysis for flow cytometry in clinical trials. 
+* Review the major points from Holden and Phil's previous papers, and the first FlowCAP paper. 
+* By bringing together assay standardization efforts and automated gating methods we aim to improve reproducibility and decrease variability and bias.
+
+## Results to present
+* Should the first figure show the staining panels and central gating (dotplots) of each panel? Perhaps this is too much page real-estate. Should we just show one or two panels, and the rest in supplementary materials? 
+  * Or, do we want to just show the staining panels (reagents) and gating hierarchies, and refer to supplementary materials for centralized gating dotplots. Then we can show specific examples / dotplots comparing centralized and autoamed gating later as necessary.
+* Results of centralized vs local gating for Cytotrol data showing that centralized gating decreases variablity.
+* Automated gating of Cytotrols showing..
+* We at least can reproduce B-cell and T-cell gating in an unbiased manner and with low variablitity compared to central gating.
+* SeraCare centralized gating vs automated gating results showing that, at least for some panels:
+  * Automated gating is unbiased relative to manual gating
+  * Variability is as low or lower than manual gating (decrease in CV)
+  * Even when biased, the bias is associated with populations that have low cell counts (to be shown), and even then, CV is lower than manual gating.
+  * Show examples of manual gates and automated gates where automated gating improves upon the manual gating
+  * Show examples where automated gating is biased, but the gates may still be reasonable. The idea is that the interpretation of the gating is subjective, but it is at least reproducible and data driven in the autoamted gating case.
+  * Show what the sources of variability are for the different panels. 
+    * i.e. most of the variablity is sample-to-sample biological variability for the B-cell and T-cell and T-reg panels. 
+    * Center-to-center variability dominates for the DC/Mono/Nk panel, and within-replicate variability dominates for the T-helper panel.
+* Power analysis for each panel. What is the effect size we expect to detect if we use these approaches.
+* Can we point to some specific examples (perhaps in the DC/Mono/NK panel where center-to-center variability dominates) where not following SOPs was the cause of the large variability.
+
+### Note that some of the above will certainly reside in the supplementary materials. 
+
+## Discussion
+* What do we gain from:
+  * standardizing reagents? 
+  * centralized analysis?
+  * autoamted gating?
+* T-helper panel was not really successful, need to discuss why or we exclude it. To be decided.
+* What is the impact of the bias we do observe. Is it significant enough to be troublesome, or can we say that the gates are actually reasonable enough and the centralized gating is really succeptible to the same subjectivity as local gating, thus we can trust the automated methods.
+* Mention where the tools can be found.
+* Discuss what is the impact of following/not following S.O.Ps when running a cross-center trial. 
+* Suggest some best practices for using these reagents and tools. Can refer to power analysis, etc.
+
 
