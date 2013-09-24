@@ -4,6 +4,7 @@ BiocGenerics
 BiocInstaller
 car
 clue
+contrast
 corpcor
 data.table
 ellipse
@@ -12,11 +13,13 @@ flowCore
 flowIncubator
 flowViz
 flowWorkspace
+Formula
 gdata
 GGally
 ggplot2
 graph
 gridExtra
+Hmisc
 Kmisc
 knitr
 languageR
@@ -28,6 +31,8 @@ marray
 MASS
 Matrix
 mnormt
+multcomp
+mvtnorm
 ncdfFlow
 nnet
 openCyto
@@ -40,8 +45,13 @@ Rcpp
 reshape
 reshape2
 rJava
+rms
+sandwich
 scales
+SparseM
 stringr
+survival
 testthat
 xlsx
 xlsxjars
+zoo

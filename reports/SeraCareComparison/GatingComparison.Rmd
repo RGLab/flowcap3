@@ -14,6 +14,8 @@ suppressPackageStartupMessages({
   require(ggplot2)
   require(languageR)
   require(Kmisc)
+  require(contrast)
+  require(multcomp)
                                })
 ```
 
@@ -69,6 +71,8 @@ load("../../data/MergedTables.rda")
 
 ```{r bcell_techrep_annotate}
   BCELL[,Replicate:=gl(nrow(.SD),1),list(Sample,Center,Population,Method)]
+  BCELL<-BCELL[Population!="Lymphocytes"]
+  BCELL[,Population:=factor(Population)]
 ```
 
 
@@ -78,13 +82,13 @@ We want to model variability between centers, between subjects, and contrast gat
 
 ### Raw data
 
-```{r bcell_boxplot,fig.width=10,fig.height=5,fig.cap="Boxplots of log proportions for each center and cell population by subject and gating method.",cache=TRUE,dpi=300}
+```{r bcell_boxplot,fig.width=10,fig.height=5,fig.cap="Boxplots of log proportions for each center and cell population by subject and gating method.",cache=FALSE,dpi=300}
   df<-cast(BCELL,Sample+Center+Method~Population+Replicate,value="Proportion")
   BCELL <- BCELL[,lp:=logit(Proportion,adjust=0.00001)]
   BCELL <- BCELL[,logp:=log(Proportion)]
   pops <- levels(BCELL$Population)
   setkey(BCELL,Population)
-  ggplot(BCELL[pops[c(3,5,8)]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))+ggtitle("Raw B-cell data")
+  ggplot(BCELL[pops[c(3,5,7)]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))+ggtitle("Raw B-cell data")
 ```
 
 How we'll model this is the following. We'll have fixed effects for gating methods, cell populations and their interactions. That is becausewe want to esimate the effec of each gating method on each population.
@@ -93,10 +97,23 @@ We fit a random intercept for Sample and Center as well as for each level of Pop
 
 We fit the reponse (proportions) on the logit scale.
 
-```{r bcell_anova,cache=TRUE}
+```{r bcell_anova,cache=FALSE}
 #Estimate fixed effects for population and method and their interaction
 #Random effects for center and sample, as random intercept for each population:center and population:Sample
   mer<-lmer(lp~Population*Method+(1|Center/Population)+(1|Sample/Population),BCELL[Population!="Lymphocytes"],REML=FALSE,verbose=FALSE)
+  mer0 <- lm(lp~Population*Method,BCELL[Population!="Lymphocytes"])
+  #contrasts
+  with(BCELL[Population!="Lymphocytes"],cnt1<<-contrast(mer0,a=list(Population=levels(Population),Method="Manual"),list(Population=levels(Population),Method="OpenCyto")))  
+  with(BCELL[Population!="Lymphocytes"],cnt2<<-contrast(mer0,list(Population=levels(Population),Method="Manual"),list(Population=levels(Population),Method="flowDensity")))
+
+  #Hypothesis names
+    rownames(cnt1$X) <-  cnt1$Population
+    rownames(cnt2$X) <-  cnt2$Population
+  #OpenCyto
+  summary(glht(mer,linfct=cnt1$X))
+
+  #flowDensity
+  summary(glht(mer,linfct=cnt2$X))
 ```
 
 ### Model fits and residuals
@@ -201,6 +218,8 @@ The range of the data looks okay.
 
 ```{r tcell_techrep_annotate}
   TCELLS[,Replicate:=gl(nrow(.SD),1),list(Sample,Center,Population,Method)]
+  TCELLS<-TCELLS[Population!="Lymphocytes"]
+  TCELLS[,Population:=factor(Population)]
 ```
 
 ## Mixed Model for T-cell Panel
@@ -219,6 +238,19 @@ We fit the mixed model to the T-cell panel.
 
 ```{r tcell_mixedmodel}
   mer<-lmer(lp~Population*Method+(1|Center/Population)+(1|Sample/Population),TCELLS[Population!="Lymphocytes"],REML=FALSE,verbose=FALSE)
+  mer0 <- lm(lp~Population*Method,TCELLS[Population!="Lymphocytes"])
+  #contrasts
+  with(TCELLS[Population!="Lymphocytes"],cnt1<<-contrast(mer0,list(Population=levels(Population),Method="Manual"),list(Population=levels(Population),Method="OpenCyto")))  
+  with(TCELLS[Population!="Lymphocytes"],cnt2<<-contrast(mer0,list(Population=levels(Population),Method="Manual"),list(Population=levels(Population),Method="flowDensity")))
+
+  #Hypothesis names
+    rownames(cnt1$X) <-  cnt1$Population
+    rownames(cnt2$X) <-  cnt2$Population
+  #OpenCyto
+  summary(glht(mer,linfct=cnt1$X))
+
+  #flowDensity
+  summary(glht(mer,linfct=cnt2$X))
 ```
 
 
@@ -330,6 +362,8 @@ The range of the data looks okay.
 
 ```{r thelper_techrep_annotate}
   THELPER[,Replicate:=gl(nrow(.SD),1),list(Sample,Center,Population,Method)]
+  THELPER<-THELPER[Population!="Lymphocytes"]
+  THELPER[,Population:=factor(Population)]
 ```
 
 ## Mixed Model for T-helper panel
@@ -340,13 +374,26 @@ The range of the data looks okay.
   THELPER <- THELPER[,logp:=log(Proportion)]
   pops <- levels((THELPER$Population))
   setkey(THELPER,Population)
-  ggplot(THELPER[pops[c(10,11,12)]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))+ggtitle("Raw T-helper data")
+  ggplot(THELPER[pops[1:3]])+geom_boxplot(aes(y=Proportion,x=Center,fill=Method))+facet_grid(Population~Sample,scales="free")+theme(axis.text.x=element_text(angle=45,hjust=1))+ggtitle("Raw T-helper data")
 ```
 
 We fit the mixed model to the T-helper panel.
 
 ```{r thelper_mixedmodel}
   mer<-lmer(lp~Population*Method+(1|Center/Population)+(1|Sample/Population),THELPER[Population!="Lymphocytes"],REML=FALSE,verbose=FALSE)
+  mer0 <- lm(lp~Population*Method,THELPER[Population!="Lymphocytes"])
+  #contrasts
+  with(THELPER[Population!="Lymphocytes"],cnt1<<-contrast(mer0,list(Population=levels(Population),Method="Manual"),list(Population=levels(Population),Method="OpenCyto")))  
+  with(THELPER[Population!="Lymphocytes"],cnt2<<-contrast(mer0,list(Population=levels(Population),Method="Manual"),list(Population=levels(Population),Method="flowDensity")))
+
+  #Hypothesis names
+      rownames(cnt1$X) <-  cnt1$Population
+    rownames(cnt2$X) <-  cnt2$Population
+  #OpenCyto
+  summary(glht(mer,linfct=cnt1$X))
+
+  #flowDensity
+  summary(glht(mer,linfct=cnt2$X))
 ```
 
 
@@ -475,6 +522,19 @@ We fit the mixed model to the DC/Mono/NK panel.
 
 ```{r dcmono_mixedmodel}
   mer<-lmer(lp~Population*Method+(1|Center/Population)+(1|Sample/Population),DC_MONO[Population!="Lymphocytes"],REML=FALSE,verbose=FALSE)
+  mer0 <- lm(lp~Population*Method,DC_MONO[Population!="Lymphocytes"])
+  #contrasts
+  with(DC_MONO[Population!="Lymphocytes"],cnt1<<-contrast(mer0,list(Population=levels(Population),Method="Manual"),list(Population=levels(Population),Method="OpenCyto")))  
+  with(DC_MONO[Population!="Lymphocytes"],cnt2<<-contrast(mer0,list(Population=levels(Population),Method="Manual"),list(Population=levels(Population),Method="flowDensity")))
+
+  #Hypothesis names
+    rownames(cnt1$X) <-  cnt1$Population
+    rownames(cnt2$X) <-  cnt2$Population
+#OpenCyto
+  summary(glht(mer,linfct=cnt1$X))
+
+  #flowDensity
+  summary(glht(mer,linfct=cnt2$X))
 ```
 
 
@@ -605,6 +665,19 @@ We fit the mixed model to the T-reg panel.
 
 ```{r treg_mixedmodel}
   mer<-lmer(lp~Population*Method+(1|Center/Population)+(1|Sample/Population),TREG[Population!="Lymphocytes"],REML=FALSE,verbose=FALSE)
+  mer0 <- lm(lp~Population*Method,TREG[Population!="Lymphocytes"])
+  #contrasts
+  with(TREG[Population!="Lymphocytes"],cnt1<<-contrast(mer0,a=list(Population=levels(Population),Method="Manual"),b=list(Population=levels(Population),Method="OpenCyto")))  
+ # with(BCELL[Population!="Lymphocytes"],cnt2<<-contrast(mer0,list(Population=levels(Population),Method="Manual"),list(Population=levels(Population),Method="flowDensity")))
+  
+  rownames(cnt1$X) <-  cnt1$Population
+
+  #Hypothesis names
+  #OpenCyto
+  summary(glht(mer,linfct=cnt1$X))
+
+  #flowDensity
+  #summary(glht(mer,linfct=cnt2$X))
 ```
 
 
