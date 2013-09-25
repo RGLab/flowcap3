@@ -321,9 +321,10 @@ mse <- cbind(BCELL, fixr = getME(mer, "X") %*% fixef(mer) + resid(mer), fix = ge
 setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
-    .SD[Method %in% "OpenCyto", fix])[1], flowDensity = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "flowDensity", fix])[1]), list(Population)], 
+    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), OpenCyto = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "OpenCyto", fix])[1]/nrow(.SD[Method %in% 
+    "Manual"]), flowDensity = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "flowDensity", fix])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
     id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
@@ -731,9 +732,10 @@ mse <- cbind(TCELLS, fixr = getME(mer, "X") %*% fixef(mer) + resid(mer), fix = g
 setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
-    .SD[Method %in% "OpenCyto", fix])[1], flowDensity = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "flowDensity", fix])[1]), list(Population)], 
+    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), OpenCyto = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "OpenCyto", fix])[1]/nrow(.SD[Method %in% 
+    "Manual"]), flowDensity = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "flowDensity", fix])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
     id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
@@ -1170,9 +1172,10 @@ setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
-    .SD[Method %in% "OpenCyto", fix])[1], flowDensity = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "flowDensity", fix])[1]), list(Population)], 
+    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), OpenCyto = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "OpenCyto", fix])[1]/nrow(.SD[Method %in% 
+    "Manual"]), flowDensity = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "flowDensity", fix])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
     id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
@@ -1527,9 +1530,10 @@ setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
-    .SD[Method %in% "OpenCyto", fix])[1], flowDensity = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "flowDensity", fix])[1]), list(Population)], 
+    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), OpenCyto = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "OpenCyto", fix])[1]/nrow(.SD[Method %in% 
+    "Manual"]), flowDensity = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "flowDensity", fix])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
     id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
@@ -1829,8 +1833,9 @@ mse <- cbind(TREG, fixr = getME(mer, "X") %*% fixef(mer) + resid(mer), fix = get
 setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
-    .SD[Method %in% "OpenCyto", fix])[1]), list(Population)], id = c("Population"))
+    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), OpenCyto = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "OpenCyto", fix])[1]/nrow(.SD[Method %in% 
+    "Manual"])), list(Population)], id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
     position = "dodge") + theme_bw() + ggtitle("Mean Squared Error for T-reg Panel") + 

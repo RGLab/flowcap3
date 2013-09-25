@@ -126,7 +126,7 @@ We fit the reponse (proportions) on the logit scale.
 mse<-cbind(BCELL,fixr=getME(mer,'X')%*%fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
 setnames(mse,c("fixr.V1","fix.V1"),c("fixr","fix"))
 
-mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1],OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1],flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fix])[1]),list(Population)],id=c("Population"))
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fix])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
 
 ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for B-cell Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
@@ -278,7 +278,7 @@ We fit the mixed model to the T-cell panel.
 mse<-cbind(TCELLS,fixr=getME(mer,'X')%*%fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
 setnames(mse,c("fixr.V1","fix.V1"),c("fixr","fix"))
 
-mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1],OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1],flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fix])[1]),list(Population)],id=c("Population"))
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fix])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
 
 ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for T-cell Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
@@ -436,7 +436,7 @@ mse<-cbind(THELPER,fixr=getME(mer,'X')%*%fixef(mer)+resid(mer),fix=getME(mer,'X'
 setnames(mse,c("fixr.V1","fix.V1"),c("fixr","fix"))
 
 
-mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1],OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1],flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fix])[1]),list(Population)],id=c("Population"))
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fix])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
 
 ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for T-helper Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
@@ -590,7 +590,7 @@ mse<-cbind(DC_MONO,fixr=getME(mer,'X')%*%fixef(mer)+resid(mer),fix=getME(mer,'X'
 setnames(mse,c("fixr.V1","fix.V1"),c("fixr","fix"))
 
 
-mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1],OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1],flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fix])[1]),list(Population)],id=c("Population"))
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fix])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
 
 ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for DC/Mono/NK Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
@@ -746,7 +746,7 @@ We fit the mixed model to the T-reg panel.
 mse<-cbind(TREG,fixr=getME(mer,'X')%*%fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
 setnames(mse,c("fixr.V1","fix.V1"),c("fixr","fix"))
 
-mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1],OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1]),list(Population)],id=c("Population"))
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
 
 ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for T-reg Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
