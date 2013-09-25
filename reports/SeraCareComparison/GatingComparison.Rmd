@@ -120,6 +120,17 @@ We fit the reponse (proportions) on the logit scale.
   summary(glht(mer,linfct=cnt2$X))
 ```
 
+### MSE
+
+```{r bcell_mse}
+mse<-cbind(BCELL,fixr=fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
+setnames(mse,"fix.V1","fix")
+
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1],OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fixr])[1],flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fixr])[1]),list(Population)],id=c("Population"))
+
+ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for B-cell Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
+```
+
 ### Model fits and residuals
 
 
@@ -259,6 +270,17 @@ We fit the mixed model to the T-cell panel.
 
   #flowDensity
   summary(glht(mer,linfct=cnt2$X))
+```
+
+### MSE
+
+```{r tcell_mse}
+mse<-cbind(TCELLS,fixr=fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
+setnames(mse,"fix.V1","fix")
+
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1],OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fixr])[1],flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fixr])[1]),list(Population)],id=c("Population"))
+
+ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for T-cell Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
 
 
@@ -407,6 +429,16 @@ We fit the mixed model to the T-helper panel.
   summary(glht(mer,linfct=cnt2$X))
 ```
 
+### MSE
+
+```{r thelper_mse}
+mse<-cbind(THELPER,fixr=fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
+setnames(mse,"fix.V1","fix")
+
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1],OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fixr])[1],flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fixr])[1]),list(Population)],id=c("Population"))
+
+ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for T-helper Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
+```
 
 
 ```{r thelper_summarize_fitted,echo=FALSE,fig.height=6,fig.width=12,dpi=200}
@@ -550,6 +582,16 @@ We fit the mixed model to the DC/Mono/NK panel.
   summary(glht(mer,linfct=cnt2$X))
 ```
 
+### MSE
+
+```{r dcmono_mse}
+mse<-cbind(DC_MONO,fixr=fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
+setnames(mse,"fix.V1","fix")
+
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1],OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fixr])[1],flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fixr])[1]),list(Population)],id=c("Population"))
+
+ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for DC/Mono/NK Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
+```
 
 
 ```{r dcmono_summarize_fitted,echo=FALSE,fig.height=6,fig.width=12,dpi=200}
@@ -696,6 +738,16 @@ We fit the mixed model to the T-reg panel.
 ```
 
 
+### MSE
+
+```{r treg_mse}
+mse<-cbind(TREG,fixr=fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
+setnames(mse,"fix.V1","fix")
+
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1],OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fixr])[1]),list(Population)],id=c("Population"))
+
+ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for T-reg Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
+```
 
 ```{r treg_summarize_fitted,echo=FALSE,fig.height=6,fig.width=12,dpi=200}
 d <- data.frame(fit=fitted(mer),TREG[Population!="Lymphocytes",],res=resid(mer),pg=TREG[Population!="Lymphocytes",Method:Population])
@@ -792,5 +844,4 @@ ggplot(TREG[Population%in%c("Activated","Total Treg","Memory","Naive","Lo127Hi25
 * Mention where the tools can be found.
 * Discuss what is the impact of following/not following S.O.Ps when running a cross-center trial. 
 * Suggest some best practices for using these reagents and tools. Can refer to power analysis, etc.
-
 

@@ -177,13 +177,14 @@ OCGates[[selected]]$Population <-
 #  list.files(".", pattern="^tmp_R_cache_TCELLS\\.RData$", full.name=TRUE)
 #         file.remove(allCacheFiles)
 TCELLS <- subset(rbind(cbind(CGates[[selected]][,1:5],Method="Manual"),
-                       cbind(FDGates[[selected]][,1:5],Method="flowDensity"),
-                 cbind(OCGates[[selected]][,1:5],Method="OpenCyto")),!Population%in%"remove")
+                       cbind(FDGates[[selected]][,c(1:5)],Method="flowDensity"),
+                 cbind(OCGates[[selected]][,c(1:5)],Method="OpenCyto")),!Population%in%"remove")
 
 ## Compute the CV for each sample and method and choose the best automated method
-TCELL.CV <- ddply(TCELLS,.(Sample,Method,Population),summarize,CV=sd(Proportion,na.rm=TRUE)/mean(Proportion,na.rm=TRUE))
-TCELL.CV <- melt(ddply(cast(TCELL.CV,value="CV",id=c("Sample","Population","Method"),Sample+Population~Method),.(Sample,Population),transform,Automated=min(flowDensity,OpenCyto)))
-setnames(TCELL.CV,c("variable","value"),c("Method","CV"))
+TCELL.CV<-data.table(TCELLS)[,list(mucnt=mean(as.numeric(Count),na.rm=TRUE),CV=sd(Proportion,na.rm=TRUE)/mean(Proportion,na.rm=TRUE)),list(Sample,Method,Population)]
+#TCELL.CV <- ddply(TCELLS,.(Sample,Method,Population),.fun=summarize,CV=sd(Proportion,na.rm=TRUE)/mean(Proportion,na.rm=TRUE))
+#TCELL.CV <- melt(ddply(cast(TCELL.CV,value=c("CV"),id=c("Sample","Population","Method"),Sample+Population~Method),.(Sample,Population),transform,Automated=min(flowDensity,OpenCyto)))
+#setnames(TCELL.CV,c("variable","value"),c("Method","CV"))
 
 pdf("Comparison/TCELLS.pdf",width=15,height=5)
 ggplot(subset(TCELL.CV,!(Population%in%"Lymphocytes")))+geom_bar(aes(y=CV,x=Method,fill=Method),stat="identity")+facet_grid(Sample~Population)+theme(axis.text.x=element_text(angle=90,hjust=1),strip.text.x=element_text(size=8))

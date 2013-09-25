@@ -312,6 +312,29 @@ summary(glht(mer, linfct = cnt2$X))
 ```
 
 
+### MSE
+
+
+```r
+mse <- cbind(BCELL, fixr = fixef(mer) + resid(mer), fix = getME(mer, "X") %*% 
+    fixef(mer))
+setnames(mse, "fix.V1", "fix")
+
+mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
+    .SD[Method %in% "OpenCyto", fixr])[1], flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]), list(Population)], 
+    id = c("Population"))
+
+ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
+    position = "dodge") + theme_bw() + ggtitle("Mean Squared Error for B-cell Panel") + 
+    scale_y_continuous("MSE") + scale_fill_discrete("Gating Method") + theme(axis.text.x = element_text(angle = 90, 
+    hjust = 1))
+```
+
+![plot of chunk bcell_mse](figure/bcell_mse.png) 
+
+
 ### Model fits and residuals
 
 
@@ -697,6 +720,29 @@ summary(glht(mer, linfct = cnt2$X))
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## (Adjusted p values reported -- single-step method)
 ```
+
+
+### MSE
+
+
+```r
+mse <- cbind(TCELLS, fixr = fixef(mer) + resid(mer), fix = getME(mer, "X") %*% 
+    fixef(mer))
+setnames(mse, "fix.V1", "fix")
+
+mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
+    .SD[Method %in% "OpenCyto", fixr])[1], flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]), list(Population)], 
+    id = c("Population"))
+
+ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
+    position = "dodge") + theme_bw() + ggtitle("Mean Squared Error for T-cell Panel") + 
+    scale_y_continuous("MSE") + scale_fill_discrete("Gating Method") + theme(axis.text.x = element_text(angle = 90, 
+    hjust = 1))
+```
+
+![plot of chunk tcell_mse](figure/tcell_mse.png) 
 
 
 
@@ -1114,6 +1160,28 @@ summary(glht(mer, linfct = cnt2$X))
 ```
 
 
+### MSE
+
+
+```r
+mse <- cbind(THELPER, fixr = fixef(mer) + resid(mer), fix = getME(mer, "X") %*% 
+    fixef(mer))
+setnames(mse, "fix.V1", "fix")
+
+mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
+    .SD[Method %in% "OpenCyto", fixr])[1], flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]), list(Population)], 
+    id = c("Population"))
+
+ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
+    position = "dodge") + theme_bw() + ggtitle("Mean Squared Error for T-helper Panel") + 
+    scale_y_continuous("MSE") + scale_fill_discrete("Gating Method") + theme(axis.text.x = element_text(angle = 90, 
+    hjust = 1))
+```
+
+![plot of chunk thelper_mse](figure/thelper_mse.png) 
+
 
 
 ![plot of chunk thelper_summarize_fitted](figure/thelper_summarize_fitted.png) 
@@ -1448,6 +1516,28 @@ summary(glht(mer, linfct = cnt2$X))
 ```
 
 
+### MSE
+
+
+```r
+mse <- cbind(DC_MONO, fixr = fixef(mer) + resid(mer), fix = getME(mer, "X") %*% 
+    fixef(mer))
+setnames(mse, "fix.V1", "fix")
+
+mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
+    .SD[Method %in% "OpenCyto", fixr])[1], flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]), list(Population)], 
+    id = c("Population"))
+
+ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
+    position = "dodge") + theme_bw() + ggtitle("Mean Squared Error for DC/Mono/NK Panel") + 
+    scale_y_continuous("MSE") + scale_fill_discrete("Gating Method") + theme(axis.text.x = element_text(angle = 90, 
+    hjust = 1))
+```
+
+![plot of chunk dcmono_mse](figure/dcmono_mse.png) 
+
 
 
 ![plot of chunk dcmono_summarize_fitted](figure/dcmono_summarize_fitted.png) 
@@ -1728,6 +1818,26 @@ summary(glht(mer, linfct = cnt1$X))
 
 
 
+### MSE
+
+
+```r
+mse <- cbind(TREG, fixr = fixef(mer) + resid(mer), fix = getME(mer, "X") %*% 
+    fixef(mer))
+setnames(mse, "fix.V1", "fix")
+
+mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
+    .SD[Method %in% "OpenCyto", fixr])[1]), list(Population)], id = c("Population"))
+
+ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
+    position = "dodge") + theme_bw() + ggtitle("Mean Squared Error for T-reg Panel") + 
+    scale_y_continuous("MSE") + scale_fill_discrete("Gating Method") + theme(axis.text.x = element_text(angle = 90, 
+    hjust = 1))
+```
+
+![plot of chunk treg_mse](figure/treg_mse.png) 
+
 
 ![plot of chunk treg_summarize_fitted](figure/treg_summarize_fitted.png) 
 
@@ -1798,5 +1908,4 @@ summary(glht(mer, linfct = cnt1$X))
 * Mention where the tools can be found.
 * Discuss what is the impact of following/not following S.O.Ps when running a cross-center trial. 
 * Suggest some best practices for using these reagents and tools. Can refer to power analysis, etc.
-
 
