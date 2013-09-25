@@ -312,7 +312,7 @@ summary(glht(mer, linfct = cnt2$X))
 ```
 
 
-### MSE
+### MSE (Variance + Bias)
 
 
 ```r
@@ -321,10 +321,10 @@ mse <- cbind(BCELL, fixr = getME(mer, "X") %*% fixef(mer) + resid(mer), fix = ge
 setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), OpenCyto = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "OpenCyto", fix])[1]/nrow(.SD[Method %in% 
-    "Manual"]), flowDensity = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "flowDensity", fix])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
+    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]/nrow(.SD[Method %in% 
+    "Manual"]), OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "OpenCyto", fixr])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
     id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
@@ -353,6 +353,60 @@ ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "
 ### Variability
 
 ![plot of chunk bcell_variance_components](figure/bcell_variance_components.png) 
+
+
+### Variance of the residuals by gating method
+
+
+```r
+BCELL[, `:=`(resid, resid(mer)), ]
+```
+
+```
+##       Sample Center                    File   Population Proportion
+##    1:  12828 Baylor      12828_1_B CELL.fcs         CD19     0.2580
+##    2:  12828 Baylor      12828_2_B CELL.fcs         CD19     0.2620
+##    3:  12828 Baylor      12828_3_B CELL.fcs         CD19     0.2410
+##    4:  12828   CIMR     B_CELL_12828_P1.fcs         CD19     0.1500
+##    5:  12828   CIMR B_CELL_12828_001_P1.fcs         CD19     0.1470
+##   ---                                                              
+## 1319:   1349  Miami     lot 1349_C5_C05.fcs Plasmablasts     0.2453
+## 1320:   1349  Miami     lot 1349_C6_C06.fcs Plasmablasts     0.4194
+## 1321:   1369  Miami     lot 1369_C7_C07.fcs Plasmablasts     0.4400
+## 1322:   1369  Miami     lot 1369_C8_C08.fcs Plasmablasts     0.4667
+## 1323:   1369  Miami     lot 1369_C9_C09.fcs Plasmablasts     0.5000
+##         Method Replicate      lp    logp      resid
+##    1:   Manual         1 -1.0564 -1.3548 -0.0675593
+##    2:   Manual         2 -1.0356 -1.3394 -0.0467696
+##    3:   Manual         3 -1.1472 -1.4230 -0.1583714
+##    4:   Manual         1 -1.7345 -1.8971 -0.2745980
+##    5:   Manual         2 -1.7583 -1.9173 -0.2983225
+##   ---                                              
+## 1319: OpenCyto         2 -1.1239 -1.4053 -0.2956345
+## 1320: OpenCyto         3 -0.3254 -0.8690  0.5028523
+## 1321: OpenCyto         1 -0.2412 -0.8210 -0.0009803
+## 1322: OpenCyto         2 -0.1335 -0.7621  0.1066481
+## 1323: OpenCyto         3  0.0000 -0.6931  0.2401768
+```
+
+```r
+ggplot(BCELL[, list(var = var(resid)), list(Population, Method)]) + geom_bar(aes(x = Population, 
+    y = var, fill = Method), position = "dodge", stat = "identity") + ggtitle("Residual Variability by Gating Method") + 
+    theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    scale_y_continuous("Variance")
+```
+
+![plot of chunk var_resid_bymethod_bcell](figure/var_resid_bymethod_bcell1.png) 
+
+```r
+ggplot(BCELL[, list(var = var(resid)), list(Population, Method, Center)]) + 
+    geom_bar(aes(x = Population, y = var, fill = Method), position = "dodge", 
+        stat = "identity") + ggtitle("Residual Variability by Center") + theme_bw() + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_y_continuous("Variance") + 
+    facet_wrap(~Center)
+```
+
+![plot of chunk var_resid_bymethod_bcell](figure/var_resid_bymethod_bcell2.png) 
 
 
 ## Summary of B-cell Panel
@@ -723,7 +777,7 @@ summary(glht(mer, linfct = cnt2$X))
 ```
 
 
-### MSE
+### MSE (Variance + Bias)
 
 
 ```r
@@ -732,10 +786,10 @@ mse <- cbind(TCELLS, fixr = getME(mer, "X") %*% fixef(mer) + resid(mer), fix = g
 setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), OpenCyto = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "OpenCyto", fix])[1]/nrow(.SD[Method %in% 
-    "Manual"]), flowDensity = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "flowDensity", fix])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
+    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]/nrow(.SD[Method %in% 
+    "Manual"]), OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "OpenCyto", fixr])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
     id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
@@ -763,6 +817,60 @@ ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "
 ### Variability
 
 ![plot of chunk tcell_variance_components](figure/tcell_variance_components.png) 
+
+
+### Variance of the residuals by gating method
+
+
+```r
+TCELLS[, `:=`(resid, resid(mer)), ]
+```
+
+```
+##       Sample Center                     File   Population Proportion
+##    1:  12828 Baylor       12828_1_T CELL.fcs          CD3    0.63000
+##    2:  12828 Baylor       12828_2_T CELL.fcs          CD3    0.65300
+##    3:  12828 Baylor       12828_3_T CELL.fcs          CD3    0.65500
+##    4:  12828  Miami     lot 12828_A1_A01.fcs          CD3    0.67100
+##    5:  12828  Miami     lot 12828_A2_A02.fcs          CD3    0.69300
+##   ---                                                               
+## 2102:   1349   UCLA TCELL 22013_1349_002.fcs CD8 Effector    0.16178
+## 2103:   1349   UCLA TCELL 22013_1349_003.fcs CD8 Effector    0.15292
+## 2104:   1369   UCLA TCELL 22013_1369_001.fcs CD8 Effector    0.05122
+## 2105:   1369   UCLA TCELL 22013_1369_002.fcs CD8 Effector    0.05292
+## 2106:   1369   UCLA TCELL 22013_1369_003.fcs CD8 Effector    0.07474
+##         Method Replicate      lp    logp    resid
+##    1:   Manual         1  0.5322 -0.4620  0.09980
+##    2:   Manual         2  0.6322 -0.4262  0.19983
+##    3:   Manual         3  0.6411 -0.4231  0.20867
+##    4:   Manual         1  0.7127 -0.3990  0.02547
+##    5:   Manual         2  0.8142 -0.3667  0.12693
+##   ---                                            
+## 2102: OpenCyto         2 -1.6450 -1.8215 -0.09726
+## 2103: OpenCyto         3 -1.7119 -1.8779 -0.16413
+## 2104: OpenCyto         1 -2.9189 -2.9717  0.01526
+## 2105: OpenCyto         2 -2.8844 -2.9389  0.04980
+## 2106: OpenCyto         3 -2.5160 -2.5938  0.41821
+```
+
+```r
+ggplot(TCELLS[, list(var = var(resid)), list(Population, Method)]) + geom_bar(aes(x = Population, 
+    y = var, fill = Method), position = "dodge", stat = "identity") + ggtitle("Residual Variability by Gating Method") + 
+    theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    scale_y_continuous("Variance")
+```
+
+![plot of chunk var_resid_bymethod_tcell](figure/var_resid_bymethod_tcell1.png) 
+
+```r
+ggplot(TCELLS[, list(var = var(resid)), list(Population, Method, Center)]) + 
+    geom_bar(aes(x = Population, y = var, fill = Method), position = "dodge", 
+        stat = "identity") + ggtitle("Residual Variability by Center") + theme_bw() + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_y_continuous("Variance") + 
+    facet_wrap(~Center)
+```
+
+![plot of chunk var_resid_bymethod_tcell](figure/var_resid_bymethod_tcell2.png) 
 
 
 ## Summary of T-cell Panel
@@ -1162,7 +1270,7 @@ summary(glht(mer, linfct = cnt2$X))
 ```
 
 
-### MSE
+### MSE (Variance + Bias)
 
 
 ```r
@@ -1172,10 +1280,10 @@ setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), OpenCyto = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "OpenCyto", fix])[1]/nrow(.SD[Method %in% 
-    "Manual"]), flowDensity = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "flowDensity", fix])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
+    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]/nrow(.SD[Method %in% 
+    "Manual"]), OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "OpenCyto", fixr])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
     id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
@@ -1202,6 +1310,64 @@ ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "
 ### Variability
 
 ![plot of chunk thelper_variance_components](figure/thelper_variance_components.png) 
+
+
+### Variance of the residuals by gating method
+
+
+```r
+THELPER[, `:=`(resid, resid(mer)), ]
+```
+
+```
+##       Sample Center                          File    Population Proportion
+##    1:  12828 Baylor    12828_1_TH1,2f,2,2f,17.fcs CD4 Activated  0.0275000
+##    2:  12828 Baylor    12828_2_TH1,2f,2,2f,17.fcs CD4 Activated  0.0317000
+##    3:  12828 Baylor    12828_3_TH1,2f,2,2f,17.fcs CD4 Activated  0.0309000
+##    4:  12828   CIMR     TH1_TH2_TH17_12828_P1.fcs CD4 Activated  0.0150000
+##    5:  12828   CIMR TH1_TH2_TH17_12828_001_P1.fcs CD4 Activated  0.0142000
+##   ---                                                                     
+## 1508:   1349   CIMR  TH1_TH2_TH17_1349_002_P1.fcs      CD8 Th17  0.0003786
+## 1509:   1349   CIMR      TH1_TH2_TH17_1349_P1.fcs      CD8 Th17  0.0003435
+## 1510:   1369   CIMR  TH1_TH2_TH17_1369_001_P1.fcs      CD8 Th17  0.0046840
+## 1511:   1369   CIMR  TH1_TH2_TH17_1369_002_P1.fcs      CD8 Th17  0.0050342
+## 1512:   1369   CIMR      TH1_TH2_TH17_1369_P1.fcs      CD8 Th17  0.0025063
+##         Method Replicate     lp   logp    resid
+##    1:   Manual         1 -3.565 -3.594  0.02151
+##    2:   Manual         2 -3.419 -3.451  0.16792
+##    3:   Manual         3 -3.445 -3.477  0.14154
+##    4:   Manual         1 -4.184 -4.200 -0.09862
+##    5:   Manual         2 -4.240 -4.255 -0.15420
+##   ---                                          
+## 1508: OpenCyto         2 -7.853 -7.879 -2.32825
+## 1509: OpenCyto         3 -7.947 -7.976 -2.42305
+## 1510: OpenCyto         1 -5.357 -5.364 -0.15299
+## 1511: OpenCyto         2 -5.284 -5.292 -0.08070
+## 1512: OpenCyto         3 -5.982 -5.989 -0.77869
+```
+
+```r
+ggplot(THELPER[, list(var = var(resid)), list(Population, Method)]) + geom_bar(aes(x = Population, 
+    y = var, fill = Method), position = "dodge", stat = "identity") + ggtitle("Residual Variability by Gating Method") + 
+    theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    scale_y_continuous("Variance")
+```
+
+![plot of chunk var_resid_bymethod_thelper](figure/var_resid_bymethod_thelper1.png) 
+
+```r
+ggplot(THELPER[, list(var = var(resid)), list(Population, Method, Center)]) + 
+    geom_bar(aes(x = Population, y = var, fill = Method), position = "dodge", 
+        stat = "identity") + ggtitle("Residual Variability by Center") + theme_bw() + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_y_continuous("Variance") + 
+    facet_wrap(~Center)
+```
+
+![plot of chunk var_resid_bymethod_thelper](figure/var_resid_bymethod_thelper2.png) 
+
+```r
+
+```
 
 
 ## Summary of T-helper Panel
@@ -1520,7 +1686,7 @@ summary(glht(mer, linfct = cnt2$X))
 ```
 
 
-### MSE
+### MSE (Variance + Bias)
 
 
 ```r
@@ -1530,10 +1696,10 @@ setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), OpenCyto = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "OpenCyto", fix])[1]/nrow(.SD[Method %in% 
-    "Manual"]), flowDensity = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "flowDensity", fix])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
+    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]/nrow(.SD[Method %in% 
+    "Manual"]), OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "OpenCyto", fixr])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
     id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
@@ -1560,6 +1726,64 @@ ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "
 ### Variability
 
 ![plot of chunk dcmono_variance_components](figure/dcmono_variance_components.png) 
+
+
+### Variance of the residuals by gating method
+
+
+```r
+DC_MONO[, `:=`(resid, resid(mer)), ]
+```
+
+```
+##       Sample Center                         File   Population Proportion
+##    1:  12828 Baylor 12828_1_DC,2f,MONO,2f,NK.fcs   CD14+CD16+    0.01370
+##    2:  12828 Baylor 12828_2_DC,2f,MONO,2f,NK.fcs   CD14+CD16+    0.01140
+##    3:  12828 Baylor 12828_3_DC,2f,MONO,2f,NK.fcs   CD14+CD16+    0.01180
+##    4:  12828   CIMR      DC_MONO_NK_12828001.fcs   CD14+CD16+    0.02380
+##    5:  12828   CIMR  DC_MONO_NK_12828001_001.fcs   CD14+CD16+    0.02530
+##   ---                                                                   
+## 1319:   1349  Miami          lot 1349_D5_D05.fcs CD11c+CD123-    0.16847
+## 1320:   1349  Miami          lot 1349_D6_D06.fcs CD11c+CD123-    0.22340
+## 1321:   1369  Miami          lot 1369_D7_D07.fcs CD11c+CD123-    0.11797
+## 1322:   1369  Miami          lot 1369_D8_D08.fcs CD11c+CD123-    0.11240
+## 1323:   1369  Miami          lot 1369_D9_D09.fcs CD11c+CD123-    0.08522
+##         Method Replicate     lp   logp    resid
+##    1:   Manual         1 -4.276 -4.290  0.13225
+##    2:   Manual         2 -4.462 -4.474 -0.05371
+##    3:   Manual         3 -4.427 -4.440 -0.01885
+##    4:   Manual         1 -3.714 -3.738 -0.15719
+##    5:   Manual         2 -3.651 -3.677 -0.09456
+##   ---                                          
+## 1319: OpenCyto         2 -1.596 -1.781  0.09110
+## 1320: OpenCyto         3 -1.246 -1.499  0.44162
+## 1321: OpenCyto         1 -2.012 -2.137 -0.59582
+## 1322: OpenCyto         2 -2.066 -2.186 -0.65043
+## 1323: OpenCyto         3 -2.373 -2.463 -0.95746
+```
+
+```r
+ggplot(DC_MONO[, list(var = var(resid)), list(Population, Method)]) + geom_bar(aes(x = Population, 
+    y = var, fill = Method), position = "dodge", stat = "identity") + ggtitle("Residual Variability by Gating Method") + 
+    theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    scale_y_continuous("Variance")
+```
+
+![plot of chunk var_resid_bymethod_dcmono](figure/var_resid_bymethod_dcmono1.png) 
+
+```r
+ggplot(DC_MONO[, list(var = var(resid)), list(Population, Method, Center)]) + 
+    geom_bar(aes(x = Population, y = var, fill = Method), position = "dodge", 
+        stat = "identity") + ggtitle("Residual Variability by Center") + theme_bw() + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_y_continuous("Variance") + 
+    facet_wrap(~Center)
+```
+
+![plot of chunk var_resid_bymethod_dcmono](figure/var_resid_bymethod_dcmono2.png) 
+
+```r
+
+```
 
 
 ## Summary of DC/Mono/NK Panel
@@ -1824,7 +2048,7 @@ summary(glht(mer, linfct = cnt1$X))
 
 
 
-### MSE
+### MSE (Variance + Bias)
 
 
 ```r
@@ -1833,9 +2057,11 @@ mse <- cbind(TREG, fixr = getME(mer, "X") %*% fixef(mer) + resid(mer), fix = get
 setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
-    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), OpenCyto = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "OpenCyto", fix])[1]/nrow(.SD[Method %in% 
-    "Manual"])), list(Population)], id = c("Population"))
+    "Manual", fixr])[1]/nrow(.SD[Method %in% "Manual"]), flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]/nrow(.SD[Method %in% 
+    "Manual"]), OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
+    "OpenCyto", fixr])[1]/nrow(.SD[Method %in% "Manual"])), list(Population)], 
+    id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
     position = "dodge") + theme_bw() + ggtitle("Mean Squared Error for T-reg Panel") + 
@@ -1868,6 +2094,62 @@ ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "
 
 ![plot of chunk treg_variance_components](figure/treg_variance_components.png) 
 
+
+### Variance of the residuals by gating method
+
+
+```r
+TREG[, `:=`(resid, resid(mer)), ]
+```
+
+```
+##      Sample Center                  File Population Proportion   Method
+##   1:  12828 Baylor     12828_1_T REG.fcs  Lo127Hi25   0.131000   Manual
+##   2:  12828 Baylor     12828_2_T REG.fcs  Lo127Hi25   0.127000   Manual
+##   3:  12828 Baylor     12828_3_T REG.fcs  Lo127Hi25   0.130000   Manual
+##   4:  12828   CIMR     TREG_12828_P1.fcs  Lo127Hi25   0.113000   Manual
+##   5:  12828   CIMR TREG_12828_001_P1.fcs  Lo127Hi25   0.109000   Manual
+##  ---                                                                   
+## 626:   1349   CIMR  TREG_1349_002_P1.fcs  Activated   0.008380 OpenCyto
+## 627:   1349   CIMR      TREG_1349_P1.fcs  Activated   0.008672 OpenCyto
+## 628:   1369   CIMR  TREG_1369_001_P1.fcs  Activated   0.000958 OpenCyto
+## 629:   1369   CIMR  TREG_1369_002_P1.fcs  Activated   0.001086 OpenCyto
+## 630:   1369   CIMR      TREG_1369_P1.fcs  Activated   0.000618 OpenCyto
+##      Replicate     lp   logp    resid
+##   1:         1 -1.892 -2.033 -0.09590
+##   2:         2 -1.928 -2.064 -0.13150
+##   3:         3 -1.901 -2.040 -0.10471
+##   4:         1 -2.060 -2.180 -0.11733
+##   5:         2 -2.101 -2.216 -0.15786
+##  ---                                 
+## 626:         2 -4.772 -4.782 -0.11740
+## 627:         3 -4.738 -4.748 -0.08291
+## 628:         1 -6.939 -6.951 -0.55584
+## 629:         2 -6.815 -6.825 -0.43148
+## 630:         3 -7.372 -7.389 -0.98879
+```
+
+```r
+ggplot(TREG[, list(var = var(resid)), list(Population, Method)]) + geom_bar(aes(x = Population, 
+    y = var, fill = Method), position = "dodge", stat = "identity") + ggtitle("Residual Variability by Gating Method") + 
+    theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    scale_y_continuous("Variance")
+```
+
+![plot of chunk var_resid_bymethod_treg](figure/var_resid_bymethod_treg1.png) 
+
+```r
+ggplot(TREG[, list(var = var(resid)), list(Population, Method, Center)]) + geom_bar(aes(x = Population, 
+    y = var, fill = Method), position = "dodge", stat = "identity") + ggtitle("Residual Variability by Center") + 
+    theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    scale_y_continuous("Variance") + facet_wrap(~Center)
+```
+
+![plot of chunk var_resid_bymethod_treg](figure/var_resid_bymethod_treg2.png) 
+
+```r
+
+```
 
 ## Summary of T-reg Panel
 
@@ -1916,3 +2198,49 @@ ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "
 * Discuss what is the impact of following/not following S.O.Ps when running a cross-center trial. 
 * Suggest some best practices for using these reagents and tools. Can refer to power analysis, etc.
 
+
+
+##########################
+##########################
+
+# Summary of Bias and Variability for each Panel
+
+## T-cell Panel
+### Bias
+![T cell bias](figure/tcell_bias1.png)
+### Variance
+![T cell variability](figure/var_resid_bymethod_tcell1.png)
+### Variance Components
+![T cell variance components](figure/tcell_variance_components.png)
+### Variance by Center
+![T cell variability by center](figure/var_resid_bymethod_tcell2.png)
+
+## B-cell Panel
+### Bias
+![B cell bias](figure/bcell_bias1.png)
+### Variance
+![B cell variability](figure/var_resid_bymethod_bcell1.png)
+### Variance Components
+![B cell variance components](figure/bcell_variance_components.png)
+### Variance by Center
+![B cell variability by center](figure/var_resid_bymethod_bcell2.png)
+
+## T-reg Panel
+### Bias
+![T reg bias](figure/treg_bias1.png)
+### Variance
+![T reg variability](figure/var_resid_bymethod_treg1.png)
+### Variance Components
+![T reg variance components](figure/treg_variance_components.png)
+### Variance by Center
+![T reg variability by center](figure/var_resid_bymethod_treg2.png)
+
+## DC/Mono/NK Panel
+### Bias
+![DC Mono NK bias](figure/dcmono_bias1.png)
+### Variance
+![DC Mono NK variability](figure/var_resid_bymethod_dcmono1.png)
+### Variance components
+![DC Mono NK variance components](figure/dcmono_variance_components.png)
+### Variance by Center
+![DC Mono NK variability by center](figure/var_resid_bymethod_dcmono2.png)

@@ -120,13 +120,13 @@ We fit the reponse (proportions) on the logit scale.
   summary(glht(mer,linfct=cnt2$X))
 ```
 
-### MSE
+### MSE (Variance + Bias)
 
 ```{r bcell_mse}
 mse<-cbind(BCELL,fixr=getME(mer,'X')%*%fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
 setnames(mse,c("fixr.V1","fix.V1"),c("fixr","fix"))
 
-mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fix])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fixr])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
 
 ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for B-cell Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
@@ -168,7 +168,7 @@ ggplot(BCELL[Population%in%c("Naive","Plasmablasts"),list(CV=var(log(Proportion)
 
 ### Variability
 
-```{r bcell_variance_components,echo=FALSE,fig.width=4,fig.height=4,dpi=200,message=FALSE}
+```{r bcell_variance_components,echo=FALSE,fig.width=5,fig.height=4,dpi=200,message=FALSE}
   #Extract Variance Components
  vc <- VarCorr(mer)
  foo<-capture.output({v <- as.numeric(print(vc,comp="Variance")[,3]);
@@ -181,6 +181,15 @@ ggplot(BCELL[Population%in%c("Naive","Plasmablasts"),list(CV=var(log(Proportion)
     #Reorder the levels by descending magnitude
   ggplot(v,aes(x=Component,y=VarComp))+geom_bar(stat='identity')+ggtitle("B-cell Panel Variance Components")+scale_y_continuous("% of Variance Explained")+scale_x_discrete("Variance Component")+theme_bw()+theme(axis.text.x=element_text(angle=45,hjust=1))
   
+```
+
+### Variance of the residuals by gating method
+
+```{r var_resid_bymethod_bcell,fig.width=8,fig.height=5,dpi=200}
+  BCELL[,resid:=resid(mer),]
+  ggplot(BCELL[,list(var=var(resid)),list(Population,Method)])+geom_bar(aes(x=Population,y=var,fill=Method),position="dodge",stat="identity")+ggtitle("Residual Variability by Gating Method")+theme_bw()+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("Variance")
+  ggplot(BCELL[,list(var=var(resid)),list(Population,Method,Center)])+geom_bar(aes(x=Population,y=var,fill=Method),position="dodge",stat="identity")+ggtitle("Residual Variability by Center")+theme_bw()+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("Variance")+facet_wrap(~Center)
+
 ```
 
 ## Summary of B-cell Panel
@@ -272,13 +281,13 @@ We fit the mixed model to the T-cell panel.
   summary(glht(mer,linfct=cnt2$X))
 ```
 
-### MSE
+### MSE (Variance + Bias)
 
 ```{r tcell_mse}
 mse<-cbind(TCELLS,fixr=getME(mer,'X')%*%fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
 setnames(mse,c("fixr.V1","fix.V1"),c("fixr","fix"))
 
-mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fix])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fixr])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
 
 ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for T-cell Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
@@ -319,7 +328,7 @@ ggplot(TCELLS[Population%in%c("CD8 Effector Memory","CD8 Central Memory","CD8 Na
 
 ### Variability
 
-```{r tcell_variance_components,echo=FALSE,fig.width=4,fig.height=4,dpi=200,message=FALSE}
+```{r tcell_variance_components,echo=FALSE,fig.width=5,fig.height=4,dpi=200,message=FALSE}
   #Extract Variance Components
  vc <- VarCorr(mer)
  foo<-capture.output({v <- as.numeric(print(vc,comp="Variance")[,3]);
@@ -331,6 +340,15 @@ ggplot(TCELLS[Population%in%c("CD8 Effector Memory","CD8 Central Memory","CD8 Na
   v$Component<-ordered(v$Component,levels=v$Component)
   #Reorder the levels by descending magnitude
   ggplot(v,aes(x=Component,y=VarComp))+geom_bar(stat='identity')+ggtitle("T-cell Panel Variance Components")+scale_y_continuous("% of Variance Explained")+scale_x_discrete("Variance Component")+theme_bw()+theme(axis.text.x=element_text(angle=45,hjust=1))
+```
+
+### Variance of the residuals by gating method
+
+```{r var_resid_bymethod_tcell,fig.width=8,fig.height=5,dpi=200}
+  TCELLS[,resid:=resid(mer),]
+  ggplot(TCELLS[,list(var=var(resid)),list(Population,Method)])+geom_bar(aes(x=Population,y=var,fill=Method),position="dodge",stat="identity")+ggtitle("Residual Variability by Gating Method")+theme_bw()+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("Variance")
+  ggplot(TCELLS[,list(var=var(resid)),list(Population,Method,Center)])+geom_bar(aes(x=Population,y=var,fill=Method),position="dodge",stat="identity")+ggtitle("Residual Variability by Center")+theme_bw()+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("Variance")+facet_wrap(~Center)
+
 ```
 
 ## Summary of T-cell Panel
@@ -429,14 +447,14 @@ We fit the mixed model to the T-helper panel.
   summary(glht(mer,linfct=cnt2$X))
 ```
 
-### MSE
+### MSE (Variance + Bias)
 
 ```{r thelper_mse}
 mse<-cbind(THELPER,fixr=getME(mer,'X')%*%fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
 setnames(mse,c("fixr.V1","fix.V1"),c("fixr","fix"))
 
 
-mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fix])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fixr])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
 
 ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for T-helper Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
@@ -476,7 +494,7 @@ ggplot(THELPER[Population%in%c("CD8 Th2","CD8 Th1","CD4 Th2","CD4 Th1"),list(CV=
 
 ### Variability
 
-```{r thelper_variance_components,echo=FALSE,fig.width=4,fig.height=4,dpi=200,message=FALSE}
+```{r thelper_variance_components,echo=FALSE,fig.width=5,fig.height=4,dpi=200,message=FALSE}
   #Extract Variance Components
  vc <- VarCorr(mer)
  foo<-capture.output({v <- as.numeric(print(vc,comp="Variance")[,3]);
@@ -488,6 +506,16 @@ ggplot(THELPER[Population%in%c("CD8 Th2","CD8 Th1","CD4 Th2","CD4 Th1"),list(CV=
   v$Component<-ordered(v$Component,levels=v$Component)
   #Reorder the levels by descending magnitude
   ggplot(v,aes(x=Component,y=VarComp))+geom_bar(stat='identity')+ggtitle("T-helper Panel Variance Components")+scale_y_continuous("% of Variance Explained")+scale_x_discrete("Variance Component")+theme_bw()+theme(axis.text.x=element_text(angle=45,hjust=1))
+```
+
+### Variance of the residuals by gating method
+
+```{r var_resid_bymethod_thelper,fig.width=8,fig.height=5,dpi=200}
+  THELPER[,resid:=resid(mer),]
+  ggplot(THELPER[,list(var=var(resid)),list(Population,Method)])+geom_bar(aes(x=Population,y=var,fill=Method),position="dodge",stat="identity")+ggtitle("Residual Variability by Gating Method")+theme_bw()+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("Variance")
+  ggplot(THELPER[,list(var=var(resid)),list(Population,Method,Center)])+geom_bar(aes(x=Population,y=var,fill=Method),position="dodge",stat="identity")+ggtitle("Residual Variability by Center")+theme_bw()+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("Variance")+facet_wrap(~Center)
+
+
 ```
 
 ## Summary of T-helper Panel
@@ -583,14 +611,14 @@ We fit the mixed model to the DC/Mono/NK panel.
   summary(glht(mer,linfct=cnt2$X))
 ```
 
-### MSE
+### MSE (Variance + Bias)
 
 ```{r dcmono_mse}
 mse<-cbind(DC_MONO,fixr=getME(mer,'X')%*%fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
 setnames(mse,c("fixr.V1","fix.V1"),c("fixr","fix"))
 
 
-mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fix])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fixr])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
 
 ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for DC/Mono/NK Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
@@ -630,7 +658,7 @@ ggplot(DC_MONO[Population%in%c("CD11c+CD123-","HLADR+","CD16+CD56-"),list(CV=var
 
 ### Variability
 
-```{r dcmono_variance_components,echo=FALSE,fig.width=4,fig.height=4,dpi=200,message=FALSE}
+```{r dcmono_variance_components,echo=FALSE,fig.width=5,fig.height=4,dpi=200,message=FALSE}
   #Extract Variance Components
  vc <- VarCorr(mer)
  foo<-capture.output({v <- as.numeric(print(vc,comp="Variance")[,3]);
@@ -642,6 +670,16 @@ ggplot(DC_MONO[Population%in%c("CD11c+CD123-","HLADR+","CD16+CD56-"),list(CV=var
   v$Component<-ordered(v$Component,levels=v$Component)
   #Reorder the levels by descending magnitude
   ggplot(v,aes(x=Component,y=VarComp))+geom_bar(stat='identity')+ggtitle("DC/Mono/NK Panel Variance Components")+scale_y_continuous("% of Variance Explained")+scale_x_discrete("Variance Component")+theme_bw()+theme(axis.text.x=element_text(angle=45,hjust=1))
+```
+
+### Variance of the residuals by gating method
+
+```{r var_resid_bymethod_dcmono,fig.width=8,fig.height=5,dpi=200}
+  DC_MONO[,resid:=resid(mer),]
+  ggplot(DC_MONO[,list(var=var(resid)),list(Population,Method)])+geom_bar(aes(x=Population,y=var,fill=Method),position="dodge",stat="identity")+ggtitle("Residual Variability by Gating Method")+theme_bw()+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("Variance")
+  ggplot(DC_MONO[,list(var=var(resid)),list(Population,Method,Center)])+geom_bar(aes(x=Population,y=var,fill=Method),position="dodge",stat="identity")+ggtitle("Residual Variability by Center")+theme_bw()+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("Variance")+facet_wrap(~Center)
+
+
 ```
 
 ## Summary of DC/Mono/NK Panel
@@ -740,13 +778,13 @@ We fit the mixed model to the T-reg panel.
 ```
 
 
-### MSE
+### MSE (Variance + Bias)
 
 ```{r treg_mse}
 mse<-cbind(TREG,fixr=getME(mer,'X')%*%fixef(mer)+resid(mer),fix=getME(mer,'X')%*%fixef(mer))
 setnames(mse,c("fixr.V1","fix.V1"),c("fixr","fix"))
 
-mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fix])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
+mse<-melt(mse[,list(Manual=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"Manual",fixr])[1]/nrow(.SD[Method%in%"Manual"]),flowDensity=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"flowDensity",fixr])[1]/nrow(.SD[Method%in%"Manual"]),OpenCyto=crossprod(.SD[Method%in%"Manual",fix]-.SD[Method%in%"OpenCyto",fixr])[1]/nrow(.SD[Method%in%"Manual"])),list(Population)],id=c("Population"))
 
 ggplot(mse)+geom_bar(aes(x=Population,y=value,fill=variable),stat="identity",position="dodge")+theme_bw()+ggtitle("Mean Squared Error for T-reg Panel")+scale_y_continuous("MSE")+scale_fill_discrete("Gating Method")+theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
@@ -786,7 +824,7 @@ ggplot(TREG[Population%in%c("Activated","Total Treg","Memory","Naive","Lo127Hi25
 
 ### Variability
 
-```{r treg_variance_components,echo=FALSE,fig.width=4,fig.height=4,dpi=200,message=FALSE}
+```{r treg_variance_components,echo=FALSE,fig.width=5,fig.height=4,dpi=200,message=FALSE}
   #Extract Variance Components
  vc <- VarCorr(mer)
  foo<-capture.output({v <- as.numeric(print(vc,comp="Variance")[,3]);
@@ -800,6 +838,15 @@ ggplot(TREG[Population%in%c("Activated","Total Treg","Memory","Naive","Lo127Hi25
   ggplot(v,aes(x=Component,y=VarComp))+geom_bar(stat='identity')+ggtitle("T-reg Panel Variance Components")+scale_y_continuous("% of Variance Explained")+scale_x_discrete("Variance Component")+theme_bw()+theme(axis.text.x=element_text(angle=45,hjust=1))
 ```
 
+### Variance of the residuals by gating method
+
+```{r var_resid_bymethod_treg,fig.width=8,fig.height=5,dpi=200}
+  TREG[,resid:=resid(mer),]
+  ggplot(TREG[,list(var=var(resid)),list(Population,Method)])+geom_bar(aes(x=Population,y=var,fill=Method),position="dodge",stat="identity")+ggtitle("Residual Variability by Gating Method")+theme_bw()+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("Variance")
+  ggplot(TREG[,list(var=var(resid)),list(Population,Method,Center)])+geom_bar(aes(x=Population,y=var,fill=Method),position="dodge",stat="identity")+ggtitle("Residual Variability by Center")+theme_bw()+theme(axis.text.x=element_text(angle=90,hjust=1))+scale_y_continuous("Variance")+facet_wrap(~Center)
+
+
+```
 ## Summary of T-reg Panel
 
 * Interestingly, there is a global sample-to-sample shift
@@ -847,3 +894,49 @@ ggplot(TREG[Population%in%c("Activated","Total Treg","Memory","Naive","Lo127Hi25
 * Discuss what is the impact of following/not following S.O.Ps when running a cross-center trial. 
 * Suggest some best practices for using these reagents and tools. Can refer to power analysis, etc.
 
+
+
+##########################
+##########################
+
+# Summary of Bias and Variability for each Panel
+
+## T-cell Panel
+### Bias
+![T cell bias](figure/tcell_bias1.png)
+### Variance
+![T cell variability](figure/var_resid_bymethod_tcell1.png)
+### Variance Components
+![T cell variance components](figure/tcell_variance_components.png)
+### Variance by Center
+![T cell variability by center](figure/var_resid_bymethod_tcell2.png)
+
+## B-cell Panel
+### Bias
+![B cell bias](figure/bcell_bias1.png)
+### Variance
+![B cell variability](figure/var_resid_bymethod_bcell1.png)
+### Variance Components
+![B cell variance components](figure/bcell_variance_components.png)
+### Variance by Center
+![B cell variability by center](figure/var_resid_bymethod_bcell2.png)
+
+## T-reg Panel
+### Bias
+![T reg bias](figure/treg_bias1.png)
+### Variance
+![T reg variability](figure/var_resid_bymethod_treg1.png)
+### Variance Components
+![T reg variance components](figure/treg_variance_components.png)
+### Variance by Center
+![T reg variability by center](figure/var_resid_bymethod_treg2.png)
+
+## DC/Mono/NK Panel
+### Bias
+![DC Mono NK bias](figure/dcmono_bias1.png)
+### Variance
+![DC Mono NK variability](figure/var_resid_bymethod_dcmono1.png)
+### Variance components
+![DC Mono NK variance components](figure/dcmono_variance_components.png)
+### Variance by Center
+![DC Mono NK variability by center](figure/var_resid_bymethod_dcmono2.png)
