@@ -316,14 +316,14 @@ summary(glht(mer, linfct = cnt2$X))
 
 
 ```r
-mse <- cbind(BCELL, fixr = fixef(mer) + resid(mer), fix = getME(mer, "X") %*% 
-    fixef(mer))
-setnames(mse, "fix.V1", "fix")
+mse <- cbind(BCELL, fixr = getME(mer, "X") %*% fixef(mer) + resid(mer), fix = getME(mer, 
+    "X") %*% fixef(mer))
+setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
     "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
-    .SD[Method %in% "OpenCyto", fixr])[1], flowDensity = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]), list(Population)], 
+    .SD[Method %in% "OpenCyto", fix])[1], flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fix])[1]), list(Population)], 
     id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
@@ -726,14 +726,14 @@ summary(glht(mer, linfct = cnt2$X))
 
 
 ```r
-mse <- cbind(TCELLS, fixr = fixef(mer) + resid(mer), fix = getME(mer, "X") %*% 
-    fixef(mer))
-setnames(mse, "fix.V1", "fix")
+mse <- cbind(TCELLS, fixr = getME(mer, "X") %*% fixef(mer) + resid(mer), fix = getME(mer, 
+    "X") %*% fixef(mer))
+setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
     "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
-    .SD[Method %in% "OpenCyto", fixr])[1], flowDensity = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]), list(Population)], 
+    .SD[Method %in% "OpenCyto", fix])[1], flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fix])[1]), list(Population)], 
     id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
@@ -1164,14 +1164,15 @@ summary(glht(mer, linfct = cnt2$X))
 
 
 ```r
-mse <- cbind(THELPER, fixr = fixef(mer) + resid(mer), fix = getME(mer, "X") %*% 
-    fixef(mer))
-setnames(mse, "fix.V1", "fix")
+mse <- cbind(THELPER, fixr = getME(mer, "X") %*% fixef(mer) + resid(mer), fix = getME(mer, 
+    "X") %*% fixef(mer))
+setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
+
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
     "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
-    .SD[Method %in% "OpenCyto", fixr])[1], flowDensity = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]), list(Population)], 
+    .SD[Method %in% "OpenCyto", fix])[1], flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fix])[1]), list(Population)], 
     id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
@@ -1520,14 +1521,15 @@ summary(glht(mer, linfct = cnt2$X))
 
 
 ```r
-mse <- cbind(DC_MONO, fixr = fixef(mer) + resid(mer), fix = getME(mer, "X") %*% 
-    fixef(mer))
-setnames(mse, "fix.V1", "fix")
+mse <- cbind(DC_MONO, fixr = getME(mer, "X") %*% fixef(mer) + resid(mer), fix = getME(mer, 
+    "X") %*% fixef(mer))
+setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
+
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
     "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
-    .SD[Method %in% "OpenCyto", fixr])[1], flowDensity = crossprod(.SD[Method %in% 
-    "Manual", fix] - .SD[Method %in% "flowDensity", fixr])[1]), list(Population)], 
+    .SD[Method %in% "OpenCyto", fix])[1], flowDensity = crossprod(.SD[Method %in% 
+    "Manual", fix] - .SD[Method %in% "flowDensity", fix])[1]), list(Population)], 
     id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
@@ -1822,13 +1824,13 @@ summary(glht(mer, linfct = cnt1$X))
 
 
 ```r
-mse <- cbind(TREG, fixr = fixef(mer) + resid(mer), fix = getME(mer, "X") %*% 
-    fixef(mer))
-setnames(mse, "fix.V1", "fix")
+mse <- cbind(TREG, fixr = getME(mer, "X") %*% fixef(mer) + resid(mer), fix = getME(mer, 
+    "X") %*% fixef(mer))
+setnames(mse, c("fixr.V1", "fix.V1"), c("fixr", "fix"))
 
 mse <- melt(mse[, list(Manual = crossprod(.SD[Method %in% "Manual", fix] - .SD[Method %in% 
     "Manual", fixr])[1], OpenCyto = crossprod(.SD[Method %in% "Manual", fix] - 
-    .SD[Method %in% "OpenCyto", fixr])[1]), list(Population)], id = c("Population"))
+    .SD[Method %in% "OpenCyto", fix])[1]), list(Population)], id = c("Population"))
 
 ggplot(mse) + geom_bar(aes(x = Population, y = value, fill = variable), stat = "identity", 
     position = "dodge") + theme_bw() + ggtitle("Mean Squared Error for T-reg Panel") + 
